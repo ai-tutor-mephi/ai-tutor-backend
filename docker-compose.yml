@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: ai-tutor-db
+    environment:
+      POSTGRES_DB: ai_tutor_db
+      POSTGRES_USER: tutor_user
+      POSTGRES_PASSWORD: 88888888
+    ports:
+      - "5432:5432"
+    networks:
+      - ai_tutor_network
+  app:
+    build: .
+    container_name: ai-tutor-app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/ai_tutor_db
+      SPRING_DATASOURCE_USERNAME: tutor_user
+      SPRING_DATASOURCE_PASSWORD: 88888888
+    depends_on:
+      - db
+    networks:
+      - ai_tutor_network
+networks:
+  ai_tutor_network:
+    driver: bridge
+
