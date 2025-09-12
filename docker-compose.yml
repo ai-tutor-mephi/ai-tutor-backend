@@ -12,6 +12,20 @@ services:
       - "5432:5432"
     networks:
       - ai_tutor_network
+  minio:
+    image: minio/minio:latest
+    container_name: ai-tutor-minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - ai_tutor_network
   app:
     build: .
     container_name: ai-tutor-app
@@ -21,11 +35,16 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/ai_tutor_db
       SPRING_DATASOURCE_USERNAME: tutor_user
       SPRING_DATASOURCE_PASSWORD: 88888888
+      APP_MINIO_ENDPOINT: http://minio:9000
+      APP_MINIO_ACCESS_KEY: minioadmin
+      APP_MINIO_SECRET_KEY: minioadmin
     depends_on:
       - db
+      - minio
     networks:
       - ai_tutor_network
 networks:
   ai_tutor_network:
     driver: bridge
-
+volumes:
+  minio_data:
