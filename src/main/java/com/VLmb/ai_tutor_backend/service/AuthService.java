@@ -32,7 +32,7 @@ public class AuthService {
     }
 
     public void register(RegisterUserRequest request) throws IllegalStateException {
-        if (userRepository.findByUserName(request.username()).isPresent()) {
+        if (userRepository.findByUserName(request.userName()).isPresent()) {
             throw new IllegalStateException("Username is already taken");
         }
         if (userRepository.findByEmail(request.email()).isPresent()) {
@@ -40,7 +40,7 @@ public class AuthService {
         }
 
         User newUser = new User();
-        newUser.setUserName(request.username());
+        newUser.setUserName(request.userName());
         newUser.setEmail(request.email());
         newUser.setHashPassword(passwordEncoder.encode(request.password()));
 
