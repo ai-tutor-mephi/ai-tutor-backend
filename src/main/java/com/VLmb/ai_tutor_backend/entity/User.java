@@ -7,6 +7,7 @@ import lombok.Setter;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -29,11 +30,22 @@ public class User {
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
+    @Column(name = "is_enable", nullable = false)
+    private boolean enabled = true;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Enumerated(EnumType.STRING)
+    private Set<Role> roles = Set.of(Role.USER);
+
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Dialog> dialogs = new ArrayList<>();
 
     @PrePersist
     public void onPrePersist() {
         this.createdAt = OffsetDateTime.now();
+    }
+
+    public Boolean isEnabled() {
+        return this.enabled;
     }
 }
