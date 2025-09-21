@@ -7,6 +7,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 
 import java.net.URI;
 
@@ -24,11 +25,16 @@ public class S3Config {
 
     @Bean
     public S3Client s3Client() {
+        S3Configuration s3Configuration = S3Configuration.builder()
+                .pathStyleAccessEnabled(true) // Включаем path-style access
+                .build();
+
         return S3Client.builder()
                 .endpointOverride(URI.create(endpoint))
                 .region(Region.of(region))
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(accessKey, secretKey)))
+                .serviceConfiguration(s3Configuration)
                 .build();
     }
 
