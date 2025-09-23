@@ -3,6 +3,8 @@ package com.VLmb.ai_tutor_backend.service;
 import com.VLmb.ai_tutor_backend.dto.AuthResponse;
 import com.VLmb.ai_tutor_backend.dto.LoginRequest;
 import com.VLmb.ai_tutor_backend.dto.RegisterUserRequest;
+import com.VLmb.ai_tutor_backend.dto.TokenRefreshRequest;
+import com.VLmb.ai_tutor_backend.entity.RefreshToken;
 import com.VLmb.ai_tutor_backend.entity.Role;
 import com.VLmb.ai_tutor_backend.entity.User;
 import com.VLmb.ai_tutor_backend.repository.UserRepository;
@@ -15,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -25,15 +28,18 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthService(AuthenticationManager authenticationManager,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
-                       UserRepository userRepository) {
+                       UserRepository userRepository,
+                       RefreshTokenService refreshTokenService) {
         this.authenticationManager = authenticationManager;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.userRepository = userRepository;
+        this.refreshTokenService = refreshTokenService;
     }
 
     public void register(RegisterUserRequest request) throws IllegalStateException {
@@ -65,20 +71,33 @@ public class AuthService {
 
         UserDetails principal = (UserDetails) auth.getPrincipal();
         String access = jwtService.generateAccessToken(principal);
-        String refresh = jwtService.generateRefreshToken(principal);
-        return new AuthResponse(access, refresh);
+        RefreshToken refresh = refreshTokenService.createRefreshToken(principal.getUsername());
+        return new AuthResponse(access, refresh.getToken());
     }
 
-    public AuthResponse refresh(String refreshToken) {
-        String username = jwtService.extractUsername(refreshToken);
-        User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new IllegalStateException("User not found"));
-        CustomUserDetails principal = new CustomUserDetails(user);
-        if (!jwtService.isTokenValid(refreshToken, principal)) {
-            throw new IllegalStateException("Invalid refresh token");
-        }
-        String newAccess = jwtService.generateAccessToken(principal);
-        return new AuthResponse(newAccess, refreshToken);
+    public AuthResponse refresh(TokenRefreshRequest request) {
+        String requestRefreshToken = request.refreshToken();
+
+        return refreshTokenService.findByToken(requestRefreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    UserDetails principal = new CustomUserDetails(user);
+
+                    refreshTokenService.deleteByUserId(user.getId());
+                    RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getUserName());
+                    String newAccessToken = jwtService.generateAccessToken(principal);
+
+                    return new AuthResponse(newAccessToken, newRefreshToken.getToken());
+                })
+                .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
+    }
+
+    public void logout(String userName) {
+
+        Optional<User> user = userRepository.findByUserName(userName);
+        user.ifPresent(value -> refreshTokenService.deleteByUserId(value.getId()));
+
     }
 
 }

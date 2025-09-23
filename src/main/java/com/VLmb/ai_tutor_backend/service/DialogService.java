@@ -1,5 +1,6 @@
 package com.VLmb.ai_tutor_backend.service;
 
+import com.VLmb.ai_tutor_backend.dto.DialogInfo;
 import com.VLmb.ai_tutor_backend.dto.DialogResponse;
 import com.VLmb.ai_tutor_backend.dto.FileResponse;
 import com.VLmb.ai_tutor_backend.entity.Dialog;
@@ -14,7 +15,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.beans.Transient;
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -72,6 +75,31 @@ public class DialogService {
             return "";
         }
         return filename.substring(filename.lastIndexOf(".") + 1);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DialogInfo> getAllDialogsForUser(User currentUser) {
+
+        return dialogRepository.findByOwnerIdOrderByCreatedAtDesc(currentUser.getId())
+                .stream()
+                .map(dialog -> new DialogInfo(dialog.getId(), dialog.getTitle(), dialog.getCreatedAt()))
+                .collect(Collectors.toList());
+    }
+
+    public void deleteDialog(Long dialogId, User currentUser) {
+
+        Dialog dialog = dialogRepository.findById(dialogId)
+                .orElseThrow(() -> new RuntimeException("Dialog not found with id: " + dialogId));
+
+        if (!dialog.getOwner().getId().equals(currentUser.getId())) {
+            throw new SecurityException("User does not have permission to delete this dialog");
+        }
+
+        for (FileMetadata file : dialog.getFiles()) {
+            fileStorageService.deleteFile(file.getStorageFileName());
+        }
+
+        dialogRepository.delete(dialog);
     }
 
 }

@@ -28,10 +28,6 @@ public class JwtService {
         return buildToken(user, props.getAccessExpiration());
     }
 
-    public String generateRefreshToken(UserDetails user) {
-        return buildToken(user, props.getRefreshExpiration());
-    }
-
     public String extractUsername(String token) {
         return getAllClaims(token).getSubject();
     }
