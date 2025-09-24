@@ -8,5 +8,4 @@ import java.io.File;
 
 @Repository
 public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long> {
-
 }
