@@ -7,6 +7,7 @@ import com.VLmb.ai_tutor_backend.dto.TokenRefreshRequest;
 import com.VLmb.ai_tutor_backend.entity.RefreshToken;
 import com.VLmb.ai_tutor_backend.entity.Role;
 import com.VLmb.ai_tutor_backend.entity.User;
+import com.VLmb.ai_tutor_backend.exception.DuplicateResourceException;
 import com.VLmb.ai_tutor_backend.repository.UserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -43,11 +44,12 @@ public class AuthService {
     }
 
     public void register(RegisterUserRequest request) throws IllegalStateException {
+
         if (userRepository.findByUserName(request.userName()).isPresent()) {
-            throw new IllegalStateException("Username is already taken");
+            throw new DuplicateResourceException("User", "userName", request.userName());
         }
         if (userRepository.findByEmail(request.email()).isPresent()) {
-            throw new IllegalStateException("Email is already in use");
+            throw new DuplicateResourceException("User", "email", request.email());
         }
 
         User newUser = new User();

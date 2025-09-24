@@ -6,6 +6,8 @@ import com.VLmb.ai_tutor_backend.dto.FileResponse;
 import com.VLmb.ai_tutor_backend.entity.Dialog;
 import com.VLmb.ai_tutor_backend.entity.FileMetadata;
 import com.VLmb.ai_tutor_backend.entity.User;
+import com.VLmb.ai_tutor_backend.exception.FileUploadException;
+import com.VLmb.ai_tutor_backend.exception.ResourceNotFoundException;
 import com.VLmb.ai_tutor_backend.repository.DialogRepository;
 import com.VLmb.ai_tutor_backend.repository.FileMetadataRepository;
 import lombok.RequiredArgsConstructor;
@@ -58,7 +60,11 @@ public class DialogService {
         String extension = getFileExtension(file.getOriginalFilename());
         String storageFileName = UUID.randomUUID() + "." + extension;
 
-        fileStorageService.uploadFile(storageFileName, file.getInputStream(), file.getSize());
+        try {
+            fileStorageService.uploadFile(storageFileName, file.getInputStream(), file.getSize());
+        } catch (IOException e) {
+            throw new FileUploadException("Could not store file " + file.getOriginalFilename(), e);
+        }
 
         FileMetadata fileMetadata = new FileMetadata();
         fileMetadata.setDialog(dialog);
@@ -89,7 +95,7 @@ public class DialogService {
     public void deleteDialog(Long dialogId, User currentUser) {
 
         Dialog dialog = dialogRepository.findById(dialogId)
-                .orElseThrow(() -> new RuntimeException("Dialog not found with id: " + dialogId));
+                .orElseThrow(() -> new ResourceNotFoundException("Dialog", "id", dialogId));
 
         if (!dialog.getOwner().getId().equals(currentUser.getId())) {
             throw new SecurityException("User does not have permission to delete this dialog");
