@@ -21,6 +21,10 @@ public class CustomUserDetails implements UserDetails {
                 .toList();
     }
 
+    public User getUser() {
+        return this.user;
+    }
+
     @Override
     public String getPassword() {
         return user.getHashPassword();

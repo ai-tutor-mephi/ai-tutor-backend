@@ -95,10 +95,9 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
     }
 
-    public void logout(String userName) {
+    public void logout(Long id) {
 
-        Optional<User> user = userRepository.findByUserName(userName);
-        user.ifPresent(value -> refreshTokenService.deleteByUserId(value.getId()));
+    refreshTokenService.deleteByUserId(id);
 
     }
 
