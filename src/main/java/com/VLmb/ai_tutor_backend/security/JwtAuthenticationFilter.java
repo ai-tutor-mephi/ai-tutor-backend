@@ -1,5 +1,6 @@
 package com.VLmb.ai_tutor_backend.security;
 
+import com.VLmb.ai_tutor_backend.service.CustomUserDetails;
 import com.VLmb.ai_tutor_backend.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -39,7 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             username = jwtService.extractUsername(token);
         } catch (Exception ignored) { }
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails user = userDetailsService.loadUserByUsername(username);
+            CustomUserDetails user = (CustomUserDetails) userDetailsService.loadUserByUsername(username);
             if (jwtService.isTokenValid(token, user)) {
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

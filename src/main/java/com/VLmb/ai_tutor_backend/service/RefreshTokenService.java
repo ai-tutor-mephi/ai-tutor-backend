@@ -2,6 +2,7 @@ package com.VLmb.ai_tutor_backend.service;
 
 import com.VLmb.ai_tutor_backend.entity.RefreshToken;
 import com.VLmb.ai_tutor_backend.entity.User;
+import com.VLmb.ai_tutor_backend.exception.TokenRefreshException;
 import com.VLmb.ai_tutor_backend.repository.RefreshTokenRepository;
 import com.VLmb.ai_tutor_backend.repository.UserRepository;
 import com.VLmb.ai_tutor_backend.security.JwtProperties;
@@ -45,10 +46,12 @@ public class RefreshTokenService {
     }
 
     public RefreshToken verifyExpiration(RefreshToken token) {
+
         if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
             refreshTokenRepository.delete(token);
-            throw new RuntimeException("Refresh token was expired. Please make a new signin request");
+            throw new TokenRefreshException(token.getToken(), "Refresh token was expired. Please make a new signin request.");
         }
+
         return token;
     }
 

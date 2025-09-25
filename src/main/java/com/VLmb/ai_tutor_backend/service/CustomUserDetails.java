@@ -1,6 +1,7 @@
 package com.VLmb.ai_tutor_backend.service;
 
 import com.VLmb.ai_tutor_backend.entity.User;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -8,17 +9,18 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 
 public class CustomUserDetails implements UserDetails {
+    @Getter
     private final User user;
+    private final Collection<? extends GrantedAuthority> authorities;
 
-    public CustomUserDetails(User user) {
+    public CustomUserDetails(User user, Collection<? extends GrantedAuthority> authorities) {
         this.user = user;
+        this.authorities = authorities;
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
-                .toList();
+        return authorities;
     }
 
     @Override

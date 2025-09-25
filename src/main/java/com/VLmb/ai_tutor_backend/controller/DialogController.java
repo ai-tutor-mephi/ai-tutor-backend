@@ -26,53 +26,44 @@ import java.util.List;
 public class DialogController {
 
     private final DialogService dialogService;
-    private final UserRepository userRepository;
 
-    @PostMapping(path = "/with-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<DialogResponse> createDialogWithFile(
-            @AuthenticationPrincipal UserDetails principal,
-            @RequestParam("file") MultipartFile file) throws IOException {
+    @PostMapping(path = "/with-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<DialogResponse> createDialogWithFiles(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @RequestParam("files") MultipartFile[] files) throws IOException {
 
-        User user = userRepository.findByUserName(principal.getUsername()).orElseThrow();
-        DialogResponse response = dialogService.createDialogWithFile(user, file);
+        DialogResponse response = dialogService.createDialogWithFiles(principal.getUser(), files);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping(path = "/{dialogId}/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<FileResponse> addFileToDialog(
+    public ResponseEntity<List<FileResponse>> addFileToDialog(
             @PathVariable Long dialogId,
-            @AuthenticationPrincipal UserDetails principal,
-            @RequestParam("file") MultipartFile file) throws IOException {
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @RequestParam("files") MultipartFile[] files) throws IOException {
 
-        User user = userRepository.findByUserName(principal.getUsername()).orElseThrow();
-        FileResponse response = dialogService.addFileToDialog(dialogId, user, file);
+        List<FileResponse> response = dialogService.addFilesToDialog(dialogId, principal.getUser(), files);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
-    public ResponseEntity<List<DialogInfo>> getAllDialogs(@AuthenticationPrincipal UserDetails principal) {
+    public ResponseEntity<List<DialogInfo>> getAllDialogs(@AuthenticationPrincipal CustomUserDetails principal) {
 
-        User currentUser = userRepository.findByUserName(principal.getUsername()).orElseThrow();
+        List<DialogInfo> dialogs = dialogService.getAllDialogsForUser(principal.getUser());
 
-        List<DialogInfo> dialogs = dialogService.getAllDialogsForUser(currentUser);
         return ResponseEntity.ok(dialogs);
     }
 
     @DeleteMapping("/{dialogId}")
     public ResponseEntity<Void> deleteDialog(
             @PathVariable Long dialogId,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal CustomUserDetails principal) {
 
-        User currentUser = userRepository.findByUserName(principal.getUsername()).orElseThrow();
+        dialogService.deleteDialog(dialogId, principal.getUser());
+        return ResponseEntity.noContent().build();
 
-        try {
-            dialogService.deleteDialog(dialogId, currentUser);
-            return ResponseEntity.noContent().build();
-        } catch (SecurityException e) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, e.getMessage());
-        } catch (RuntimeException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        }
     }
 
 }
