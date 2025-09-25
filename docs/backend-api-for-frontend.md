@@ -140,17 +140,17 @@ access_token представляет собой JWT, живет 15 минут, 
 - **Эндпоинт:** `GET /api/dialogs/{dialogId}/files`
 - **Успешный ответ (200 OK):** Массив объектов.
 ```json
-  [
-{
-        "fileId": 1,
-        "originalFileName": "IMG_7182.jpg",
-        "dialogId": 1
-    },
-    {
-        "fileId": 2,
-        "originalFileName": "photo_2024-08-03_18-16-42.jpg",
-        "dialogId": 1
-    }
+[ 
+    { 
+        "dialogId": 2,
+        "title": "Обсуждение курсовой.docx",
+        "createdAt": "2023-10-28T12:00:00Z" 
+    }, 
+    { 
+        "dialogId": 1,
+        "title": "Годовой отчет.pdf", 
+        "createdAt": "2023-10-27T15:30:00Z" 
+    } 
 ]
 ```
 
