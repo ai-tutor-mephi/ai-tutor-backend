@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.beans.Transient;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -30,30 +31,48 @@ public class DialogService {
     private final FileStorageService fileStorageService;
 
     @Transactional
-    public DialogResponse createDialogWithFile(User user, MultipartFile file) throws IOException {
+    public DialogResponse createDialogWithFiles(User user, MultipartFile[] files) throws IOException {
+        if (files == null || files.length == 0) {
+            throw new IllegalArgumentException("At least one file must be provided.");
+        }
 
         Dialog dialog = new Dialog();
         dialog.setOwner(user);
-        dialog.setTitle(file.getOriginalFilename());
+        dialog.setTitle(files[0].getOriginalFilename());
         Dialog savedDialog = dialogRepository.save(dialog);
 
-        addFileToDialog(savedDialog, file);
+        Arrays.stream(files).forEach(file -> {
+            try {
+                addFileToDialog(savedDialog, file);
+            } catch (IOException e) {
+                throw new FileUploadException("Failed to upload file: " + file.getOriginalFilename(), e);
+            }
+        });
 
         return new DialogResponse(savedDialog.getId(), savedDialog.getTitle());
     }
 
     @Transactional
-    public FileResponse addFileToDialog(Long dialogId, User currentUser, MultipartFile file) throws IOException {
+    public List<FileResponse> addFilesToDialog(Long dialogId, User currentUser, MultipartFile[] files) throws IOException {
+        if (files == null || files.length == 0) {
+            throw new IllegalArgumentException("At least one file must be provided.");
+        }
+
         Dialog dialog = dialogRepository.findById(dialogId)
-                .orElseThrow(() -> new RuntimeException("Dialog not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Dialog", "id", dialogId));
 
         if (!dialog.getOwner().getId().equals(currentUser.getId())) {
             throw new SecurityException("User does not have permission to access this dialog");
         }
 
-        FileMetadata savedFile = addFileToDialog(dialog, file);
-
-        return new FileResponse(savedFile.getId(), savedFile.getOriginalFileName(), dialog.getId());
+        return Arrays.stream(files).map(file -> {
+            try {
+                FileMetadata savedFile = addFileToDialog(dialog, file);
+                return new FileResponse(savedFile.getId(), savedFile.getOriginalFileName(), dialog.getId());
+            } catch (IOException e) {
+                throw new FileUploadException("Failed to upload file: " + file.getOriginalFilename(), e);
+            }
+        }).collect(Collectors.toList());
     }
 
     private FileMetadata addFileToDialog(Dialog dialog, MultipartFile file) throws IOException {

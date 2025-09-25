@@ -27,23 +27,23 @@ public class DialogController {
 
     private final DialogService dialogService;
 
-    @PostMapping(path = "/with-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<DialogResponse> createDialogWithFile(
+    @PostMapping(path = "/with-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<DialogResponse> createDialogWithFiles(
             @AuthenticationPrincipal CustomUserDetails principal,
-            @RequestParam("file") MultipartFile file) throws IOException {
+            @RequestParam("files") MultipartFile[] files) throws IOException {
 
-        DialogResponse response = dialogService.createDialogWithFile(principal.getUser(), file);
+        DialogResponse response = dialogService.createDialogWithFiles(principal.getUser(), files);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping(path = "/{dialogId}/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<FileResponse> addFileToDialog(
+    public ResponseEntity<List<FileResponse>> addFileToDialog(
             @PathVariable Long dialogId,
             @AuthenticationPrincipal CustomUserDetails principal,
-            @RequestParam("file") MultipartFile file) throws IOException {
+            @RequestParam("files") MultipartFile[] files) throws IOException {
 
-        FileResponse response = dialogService.addFileToDialog(dialogId, principal.getUser(), file);
+        List<FileResponse> response = dialogService.addFilesToDialog(dialogId, principal.getUser(), files);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
