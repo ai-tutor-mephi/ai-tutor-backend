@@ -18,7 +18,7 @@
  
 - Ошибки: 500, 400
 
-### `localhost:8000/rag/user-question
+### `localhost:8000/rag/user-question`
 
 - Тело:
 ```json
