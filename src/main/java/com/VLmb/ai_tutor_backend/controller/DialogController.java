@@ -48,6 +48,16 @@ public class DialogController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping(path = "/{dialogId}/files")
+    public ResponseEntity<List<FileResponse>> getFilesFromDialog(
+            @PathVariable Long dialogId,
+            @AuthenticationPrincipal CustomUserDetails principal) throws IOException {
+
+        List<FileResponse> response = dialogService.getFilesFromDialog(dialogId, principal.getUser());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
     @GetMapping
     public ResponseEntity<List<DialogInfo>> getAllDialogs(@AuthenticationPrincipal CustomUserDetails principal) {
 

@@ -103,6 +103,25 @@ public class DialogService {
     }
 
     @Transactional(readOnly = true)
+    public List<FileResponse> getFilesFromDialog(Long dialogId, User currentUser) throws IOException {
+        Dialog dialog = dialogRepository.findById(dialogId)
+                .orElseThrow(() -> new ResourceNotFoundException("Dialog", "id", dialogId));
+
+        if (!dialog.getOwner().getId().equals(currentUser.getId())) {
+            throw new SecurityException("User does not have permission to access this dialog");
+        }
+
+        List<FileMetadata> files = dialog.getFiles();
+
+        return files.stream()
+                .map(file -> new FileResponse(
+                        file.getId(),
+                        file.getOriginalFileName(),
+                        dialog.getId()))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public List<DialogInfo> getAllDialogsForUser(User currentUser) {
 
         return dialogRepository.findByOwnerIdOrderByCreatedAtDesc(currentUser.getId())
