@@ -4,8 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.InputStream;
 
@@ -22,11 +21,31 @@ public class FileStorageService {
     }
 
     public void uploadFile(String objectKey, InputStream inputStream, long contentLength) {
+        ensureBucketExists();
+
         PutObjectRequest request = PutObjectRequest.builder()
                 .bucket(bucketName)
                 .key(objectKey)
                 .build();
         s3Client.putObject(request, RequestBody.fromInputStream(inputStream, contentLength));
+    }
+
+    private void ensureBucketExists() {
+        try {
+            HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
+                    .bucket(bucketName)
+                    .build();
+            s3Client.headBucket(headBucketRequest);
+        } catch (NoSuchBucketException e) {
+            try {
+                CreateBucketRequest createBucketRequest = CreateBucketRequest.builder()
+                        .bucket(bucketName)
+                        .build();
+                s3Client.createBucket(createBucketRequest);
+            } catch (S3Exception ex) {
+                throw new RuntimeException("Could not create bucket: " + bucketName, ex);
+            }
+        }
     }
 
     public void deleteFile(String objectKey) {
