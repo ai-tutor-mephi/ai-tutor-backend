@@ -1,7 +1,9 @@
 package com.VLmb.ai_tutor_backend.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.OffsetDateTime;
@@ -34,8 +36,8 @@ public class Message {
         this.createdAt = OffsetDateTime.now();
     }
 
-    enum MessageRole {
+    public enum MessageRole {
         USER,
-        AI
+        BOT
     }
 }

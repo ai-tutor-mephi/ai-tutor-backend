@@ -1,21 +1,20 @@
 package com.VLmb.ai_tutor_backend.service;
 
-import com.VLmb.ai_tutor_backend.dto.DialogInfo;
-import com.VLmb.ai_tutor_backend.dto.DialogResponse;
-import com.VLmb.ai_tutor_backend.dto.FileResponse;
+import com.VLmb.ai_tutor_backend.dto.*;
 import com.VLmb.ai_tutor_backend.entity.Dialog;
 import com.VLmb.ai_tutor_backend.entity.FileMetadata;
+import com.VLmb.ai_tutor_backend.entity.Message;
 import com.VLmb.ai_tutor_backend.entity.User;
 import com.VLmb.ai_tutor_backend.exception.FileUploadException;
 import com.VLmb.ai_tutor_backend.exception.ResourceNotFoundException;
 import com.VLmb.ai_tutor_backend.repository.DialogRepository;
 import com.VLmb.ai_tutor_backend.repository.FileMetadataRepository;
+import com.VLmb.ai_tutor_backend.repository.MessageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.beans.Transient;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -29,6 +28,7 @@ public class DialogService {
     private final DialogRepository dialogRepository;
     private final FileMetadataRepository fileMetadataRepository;
     private final FileStorageService fileStorageService;
+    private final MessageRepository messageRepository;
 
     @Transactional
     public DialogResponse createDialogWithFiles(User user, MultipartFile[] files) throws IOException {
@@ -128,6 +128,20 @@ public class DialogService {
                 .stream()
                 .map(dialog -> new DialogInfo(dialog.getId(), dialog.getTitle(), dialog.getCreatedAt()))
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public MessageResponse sendQuestion(MessageRequest messageRequest, User currentUser, Long dialogId) throws IOException {
+
+        Message message = new Message();
+        message.setRole(Message.MessageRole.USER);
+        message.setDialog(dialogRepository.findById(dialogId)
+                .orElseThrow(() -> new ResourceNotFoundException("Dialog", "id", dialogId)));
+        message.setContent(messageRequest.question());
+
+        messageRepository.save(message);
+
+
     }
 
     public void deleteDialog(Long dialogId, User currentUser) {
