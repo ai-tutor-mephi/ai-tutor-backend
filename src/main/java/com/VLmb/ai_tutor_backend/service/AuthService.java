@@ -12,6 +12,7 @@ import com.VLmb.ai_tutor_backend.repository.UserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -84,7 +85,11 @@ public class AuthService {
                 .map(refreshTokenService::verifyExpiration)
                 .map(RefreshToken::getUser)
                 .map(user -> {
-                    UserDetails principal = new CustomUserDetails(user);
+                    var authorities = user.getRoles().stream()
+                            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name())) // если enum
+                            .toList();
+
+                    UserDetails principal = new CustomUserDetails(user, authorities);
 
                     refreshTokenService.deleteByUserId(user.getId());
                     RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getUserName());

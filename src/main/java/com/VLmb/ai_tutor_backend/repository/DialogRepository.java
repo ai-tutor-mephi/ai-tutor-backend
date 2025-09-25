@@ -11,5 +11,5 @@ import java.util.Optional;
 public interface DialogRepository extends JpaRepository<Dialog, Long> {
     List<Dialog> findByOwnerId(Long userId);
 
-    Optional<Dialog> findByOwnerIdOrderByCreatedAtDesc(Long id);
+    List<Dialog> findByOwnerIdOrderByCreatedAtDesc(Long id);
 }

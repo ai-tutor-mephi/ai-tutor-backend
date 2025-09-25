@@ -29,7 +29,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
         List<GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
 
-        return  new org.springframework.security.core.userdetails.User(appUser.getUserName(),
-                appUser.getHashPassword(), new ArrayList<>());
+        return new CustomUserDetails(appUser, authorities);
     }
 }
