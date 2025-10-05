@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: ai-tutor-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ai_tutor_db
+    userName: tutor_user
+    password: 88888888
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 1GB
+
+server:
+  port: 8080
+
+security:
+  jwt:
+    secret: jbxAUJMPcDpMKDbrLrHTPUrPBnWsIggGxtHkGHYqCBCkpQDVrxSVVDlVKdrKSzzOqwyaAzsiEnBOatSZLJGVkSA
+    access-expiration: 900
+    refresh-expiration: 2592000
+    issuer: ai-tutor-backend
+
+app:
+  minio:
+    endpoint: http://localhost:9000
+    access-key: minioadmin
+    secret-key: minioadmin
+    bucket-name: ai-tutor-files
+    region: us-east-1
+
+clients:
+  rag:
+    base-url: https://localhost:8000
+    connect-timeout: 2s
+    response-timeout: 1200s
+    max-in-memory-size: 1MB
+    log-payloads: true
+    retry:
+      max-attempts: 3
+      backoff: 200ms
+
+logging:
+  level:
+    org.springframework.security: TRACE

@@ -1,5 +1,6 @@
 package com.VLmb.ai_tutor_backend.service;
 
+import com.VLmb.ai_tutor_backend.client.RagRestClient;
 import com.VLmb.ai_tutor_backend.dto.*;
 import com.VLmb.ai_tutor_backend.entity.Dialog;
 import com.VLmb.ai_tutor_backend.entity.FileMetadata;
@@ -29,6 +30,7 @@ public class DialogService {
     private final FileMetadataRepository fileMetadataRepository;
     private final FileStorageService fileStorageService;
     private final MessageRepository messageRepository;
+    private final RagRestClient ragRestClient;
 
     @Transactional
     public DialogResponse createDialogWithFiles(User user, MultipartFile[] files) throws IOException {
@@ -133,15 +135,26 @@ public class DialogService {
     @Transactional
     public MessageResponse sendQuestion(MessageRequest messageRequest, User currentUser, Long dialogId) throws IOException {
 
-        Message message = new Message();
-        message.setRole(Message.MessageRole.USER);
-        message.setDialog(dialogRepository.findById(dialogId)
+        Message question = new Message();
+        question.setRole(Message.MessageRole.USER);
+        question.setDialog(dialogRepository.findById(dialogId)
                 .orElseThrow(() -> new ResourceNotFoundException("Dialog", "id", dialogId)));
-        message.setContent(messageRequest.question());
+        question.setContent(messageRequest.question());
 
-        messageRepository.save(message);
+        messageRepository.save(question);
 
+        MessageResponse messageResponse = ragRestClient.current(question.getContent());
 
+        if (messageResponse.answer() != null) {
+            Message answer = new Message();
+            answer.setRole(Message.MessageRole.BOT);
+            answer.setDialog(dialogRepository.findById(dialogId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Dialog", "id", dialogId)));
+            answer.setContent(messageResponse.answer());
+            messageRepository.save(answer);
+        }
+
+        return messageResponse;
     }
 
     public void deleteDialog(Long dialogId, User currentUser) {
