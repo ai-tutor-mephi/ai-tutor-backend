@@ -1,20 +1,20 @@
 FROM maven:3.9-eclipse-temurin-17 AS builder
 
 WORKDIR /app
-
 COPY pom.xml .
 RUN mvn dependency:go-offline
-
 COPY src ./src
 
-RUN mvn clean package -Dmaven.test.skip=true
+# Собрать, но не запускать тесты на этом этапе
+RUN mvn clean package -DskipTests
 
+# ------------------ Stage для тестов ------------------
+FROM builder AS tester
+CMD ["mvn", "test", "-Dspring.profiles.active=test"]
+
+# ------------------ Stage для прод-образа ------------------
 FROM openjdk:17-jdk-slim
-
 WORKDIR /app
-
 COPY --from=builder /app/target/*.jar app.jar
-
 EXPOSE 8080
-
 ENTRYPOINT ["java", "-jar", "app.jar"]

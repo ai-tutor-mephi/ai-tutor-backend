@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: ai-tutor-backend-test
+
+  datasource:
+    url: jdbc:tc:postgresql:15:///testdb
+    username: test
+    password: test
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 1GB
+
+server:
+  port: 0
+
+security:
+  jwt:
+    secret: test-secret-for-jwt-only-in-tests
+    access-expiration: 900
+    refresh-expiration: 2592000
+    issuer: ai-tutor-backend-test
+
+app:
+  minio:
+    endpoint: http://localhost:9000
+    access-key: minioadmin
+    secret-key: minioadmin
+    bucket-name: ai-tutor-files-test
+    region: us-east-1
+
+clients:
+  rag:
+    base-url: "http://localhost:${wiremock.server.port}"
+    connect-timeout: 2s
+    response-timeout: 30s
+    max-in-memory-size: 1MB
+    log-payloads: true
+    retry:
+      max-attempts: 3
+      backoff: 200ms
+
+logging:
+  level:
+    org.springframework.security: WARN
+    com.github.tomakehurst.wiremock: INFO

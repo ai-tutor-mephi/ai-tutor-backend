@@ -1,0 +1,107 @@
+### @Component
+- **Как видит Spring:** «Это обычный Spring-бин, положи его в контейнер».
+- **Что делает:** регистрирует класс в `ApplicationContext`, чтобы потом его можно было внедрять (`@Autowired`, конструктор).
+- **Когда использовать:** если класс не подходит под более конкретные стереотипы. Например, какой-нибудь `EmailValidator`.
+### @Service
+- **Как видит Spring:** то же самое, что `@Component`, только **по смыслу** — слой бизнес-логики.
+- **Что делает:** технически ничего особенного, просто маркировка для читаемости и структурирования.
+- **Когда использовать:** для классов, которые содержат бизнес-логику (сервисы, менеджеры, обработчики).
+### @Repository
+- **Как видит Spring:** опять же `@Component`, но с дополнительной логикой.
+- **Что делает:**
+    1. Регистрирует бин.
+    2. Добавляет механизм **перехвата исключений** (PersistenceExceptionTranslation). То есть SQL-исключения переводятся в унифицированные Spring Data исключения.
+- **Когда использовать:** для классов доступа к БД (DAO, репозитории).
+### @Controller / @RestController
+- **Как видит Spring:** бин, отвечающий за веб-слой.
+- **Что делает:** маршрутизирует HTTP-запросы.
+- **Разница:**
+    - `@Controller` — возвращает HTML/шаблоны.
+    - `@RestController` — возвращает JSON/объекты (это `@Controller + @ResponseBody`).
+### @Configuration
+- **Как видит Spring:** класс-конфиг, в котором описываются бины.
+- **Что делает:** Spring сканирует этот класс, вызывает его методы с `@Bean` и кладёт результаты в контейнер.
+- **Фишка:** методы с `@Bean` внутри такого класса вызываются как «прокси» — Spring следит, чтобы бин создавался один раз (singleton), даже если метод вызван несколько раз.
+### @Bean
+**Что это такое:**
+- Это аннотация на методе внутри `@Configuration` класса.
+- Говорит Spring: «Вызови этот метод и положи результат в контейнер как бин».
+**Как видит Spring:**
+1. Находит класс с `@Configuration`.
+2. Вызывает метод с `@Bean`.
+3. Полученный объект кладёт в `ApplicationContext`.
+4. Теперь его можно внедрять (`@Autowired`, конструктор).
+```java
+@Configuration
+public class AppConfig {
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper()
+                .findAndRegisterModules();
+    }
+}
+```
+### @Autowired
+**Что это такое:**
+- Это аннотация, которая говорит Spring: «Найди в контейнере бин подходящего типа и внедри его сюда».
+- Работает для полей, сеттеров, конструкторов.
+**Как видит Spring:**
+1. Видит `@Autowired`.
+2. Смотрит в контейнер бинов (`ApplicationContext`).
+3. Находит бин нужного типа (или по имени, если типов несколько).
+4. Подставляет в поле/параметр.
+```java
+@Service
+public class DialogService {
+    @Autowired
+    private DialogRepository repository;
+}
+```
+```java
+@Service
+public class DialogService {
+    private final DialogRepository repository;
+
+    @Autowired // можно опустить с одним конструктором
+    public DialogService(DialogRepository repository) {
+        this.repository = repository;
+    }
+}
+```
+### @Qualifier
+- **Как видит Spring:** уточнение для `@Autowired`.
+- **Что делает:** если есть несколько бинов одного типа, указывает, какой именно внедрить.
+```java
+@Bean
+@Qualifier("fast")
+public PaymentService fastPaymentService() { ... }
+
+@Bean
+@Qualifier("secure")
+public PaymentService securePaymentService() { ... }
+
+@Service
+public class CheckoutService {
+    public CheckoutService(@Qualifier("secure") PaymentService service) { ... }
+}
+```
+### @Primary
+**Как видит Spring:** «если есть несколько кандидатов для внедрения — выбирай этот по умолчанию».
+```java
+@Bean
+@Primary
+public PaymentService defaultPaymentService() {
+    return new DefaultPaymentService();
+}
+```
+### @Lazy
+- **Как видит Spring:** «не создавай бин при старте, отложи до первого использования».
+- **Когда использовать:** для тяжёлых или редко используемых объектов.
+### @Scope
+- **Как видит Spring:** задаёт жизненный цикл бина.
+- **Популярные варианты:**
+    - `singleton` (по умолчанию) — один экземпляр на всё приложение.
+    - `prototype` — новый экземпляр при каждом запросе к контейнеру.
+    - `request` (в веб-приложениях) — новый бин на каждый HTTP-запрос.
+    - `session` — один бин на HTTP-сессию.

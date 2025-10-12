@@ -43,6 +43,17 @@ public class DialogController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PostMapping(path = "/{dialogId}/send-question")
+    public ResponseEntity<MessageResponse> sendMessageToDialog(
+            @PathVariable Long dialogId,
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @RequestBody MessageRequest messageRequest) throws IOException {
+
+        MessageResponse response = dialogService.sendQuestion(messageRequest, principal.getUser(), dialogId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
 
     @GetMapping(path = "/{dialogId}/files")
     public ResponseEntity<List<FileResponse>> getFilesFromDialog(

@@ -17,9 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -141,9 +139,18 @@ public class DialogService {
                 .orElseThrow(() -> new ResourceNotFoundException("Dialog", "id", dialogId)));
         question.setContent(messageRequest.question());
 
-        messageRepository.save(question);
+        List<DialogMessagesDto> dialogMessages = new ArrayList<>();
+        for (Message message: messageRepository.findByDialogId(dialogId)) {
+            dialogMessages.add(new DialogMessagesDto(message.getContent(), message.getRole()));
+        }
 
-        MessageResponse messageResponse = ragRestClient.current(question.getContent());
+        MessageResponse messageResponse = ragRestClient.current(new RagRequestDto(
+                dialogId,
+                dialogMessages,
+                question.getContent()
+        ));
+
+        messageRepository.save(question);
 
         if (messageResponse.answer() != null) {
             Message answer = new Message();
