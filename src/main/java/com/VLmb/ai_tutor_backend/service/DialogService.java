@@ -28,7 +28,8 @@ public class DialogService {
     private final FileMetadataRepository fileMetadataRepository;
     private final FileStorageService fileStorageService;
     private final MessageRepository messageRepository;
-    private final RagRestClient ragRestClient;
+    private final RagCommunicationService ragCommunicationService;
+    private final PdfParsingService pdfParsingService;
 
     @Transactional
     public DialogResponse createDialogWithFiles(User user, MultipartFile[] files) throws IOException {
@@ -65,14 +66,25 @@ public class DialogService {
             throw new SecurityException("User does not have permission to access this dialog");
         }
 
-        return Arrays.stream(files).map(file -> {
+        List<FileInf> savedFiles = new ArrayList<>();
+        List<FileResponse> loadedFiles = Arrays.stream(files).map(file -> {
             try {
                 FileMetadata savedFile = addFileToDialog(dialog, file);
+                savedFiles.add(new FileInf(
+                        savedFile.getId(),
+                        savedFile.getOriginalFileName(),
+                        pdfParsingService.parsePdf(file)
+
+                ));
                 return new FileResponse(savedFile.getId(), savedFile.getOriginalFileName(), dialog.getId());
             } catch (IOException e) {
                 throw new FileUploadException("Failed to upload file: " + file.getOriginalFilename(), e);
             }
-        }).collect(Collectors.toList());
+        }).toList();
+
+        ragCommunicationService.loadFileToRag(dialogId, savedFiles);
+
+        return loadedFiles;
     }
 
     private FileMetadata addFileToDialog(Dialog dialog, MultipartFile file) throws IOException {
@@ -144,11 +156,7 @@ public class DialogService {
             dialogMessages.add(new DialogMessagesDto(message.getContent(), message.getRole()));
         }
 
-        MessageResponse messageResponse = ragRestClient.current(new RagRequestDto(
-                dialogId,
-                dialogMessages,
-                question.getContent()
-        ));
+        MessageResponse messageResponse = ragCommunicationService.sendQuestionToRag(dialogId, question);
 
         messageRepository.save(question);
 

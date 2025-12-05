@@ -53,7 +53,7 @@
 //
 //        server.expect(
 //                        once(),
-//                        requestTo(baseUrl + "/v1/current"))
+//                        requestTo(baseUrl + "/v1/sendMessage"))
 //                .andExpect(method(HttpMethod.POST))
 //                .andExpect(header("Content-Type", MediaType.APPLICATION_JSON_VALUE))
 //                .andExpect(jsonPath("$.message").value("Hello RAG"))
@@ -61,7 +61,7 @@
 //                        withSuccess(expectedJsonResponse, MediaType.APPLICATION_JSON));
 //
 //
-//        MessageResponse response = client.current("Hello RAG");
+//        MessageResponse response = client.sendMessage("Hello RAG");
 //
 //
 //        assertNotNull(response);

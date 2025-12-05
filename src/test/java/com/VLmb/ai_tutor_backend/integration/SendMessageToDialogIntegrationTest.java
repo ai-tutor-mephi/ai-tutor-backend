@@ -104,6 +104,7 @@ public class SendMessageToDialogIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
+
         RegisterUserRequest registerRequest = new RegisterUserRequest(
                 username,
                 email,
