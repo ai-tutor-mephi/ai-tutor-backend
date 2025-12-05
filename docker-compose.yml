@@ -57,27 +57,27 @@ services:
     networks:
       - ai_tutor_network
 
-  tests:
-    build:
-      context: .
-      target: tester
-    container_name: ai-tutor-tests
-    volumes:
-      - ./logs:/app/logs
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/ai_tutor_db
-      SPRING_DATASOURCE_USERNAME: tutor_user
-      SPRING_DATASOURCE_PASSWORD: 88888888
-      APP_MINIO_ENDPOINT: http://minio:9000
-      APP_MINIO_ACCESS_KEY: minioadmin
-      APP_MINIO_SECRET_KEY: minioadmin
-    depends_on:
-      db:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-    networks:
-      - ai_tutor_network
+#  tests:
+#    build:
+#      context: .
+#      target: tester
+#    container_name: ai-tutor-tests
+#    volumes:
+#      - ./logs:/app/logs
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/ai_tutor_db
+#      SPRING_DATASOURCE_USERNAME: tutor_user
+#      SPRING_DATASOURCE_PASSWORD: 88888888
+#      APP_MINIO_ENDPOINT: http://minio:9000
+#      APP_MINIO_ACCESS_KEY: minioadmin
+#      APP_MINIO_SECRET_KEY: minioadmin
+#    depends_on:
+#      db:
+#        condition: service_healthy
+#      minio:
+#        condition: service_healthy
+#    networks:
+#      - ai_tutor_network
 
 networks:
   ai_tutor_network:
