@@ -15,6 +15,8 @@ import com.VLmb.ai_tutor_backend.exception.ResourceNotFoundException;
 import com.VLmb.ai_tutor_backend.repository.DialogRepository;
 import com.VLmb.ai_tutor_backend.repository.FileMetadataRepository;
 import com.VLmb.ai_tutor_backend.repository.MessageRepository;
+import com.VLmb.ai_tutor_backend.service.fileparsing.ExtensionsEnum;
+import com.VLmb.ai_tutor_backend.service.fileparsing.FileParserFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -32,17 +35,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DialogService {
 
-    private static final String PDF_EXTENSION = "pdf";
-    private static final String DOCX_EXTENSION = "docx";
-    private static final Set<String> TEXT_BASED_EXTENSIONS = Set.of(PDF_EXTENSION, DOCX_EXTENSION);
+    private static final Set<ExtensionsEnum> TEXT_BASED_EXTENSIONS = Set.of(
+            ExtensionsEnum.PDF,
+            ExtensionsEnum.DOCX,
+            ExtensionsEnum.TXT
+    );
 
     private final DialogRepository dialogRepository;
     private final FileMetadataRepository fileMetadataRepository;
     private final FileStorageService fileStorageService;
     private final MessageRepository messageRepository;
     private final RagCommunicationService ragCommunicationService;
-    private final PdfParsingService pdfParsingService;
-    private final DocxParsingService docxParsingService;
 
     @Transactional
     public DialogResponse createDialogWithFiles(User user, MultipartFile[] files) throws IOException {
@@ -106,28 +109,21 @@ public class DialogService {
         fileMetadata.setMimeType(file.getContentType());
 
         FileMetadata saved = fileMetadataRepository.save(fileMetadata);
-        if (TEXT_BASED_EXTENSIONS.contains(extension)) {
-            sendFileToRag(dialog.getId(), saved, file, extension);
+        Optional<ExtensionsEnum> parsedExtension = ExtensionsEnum.fromValue(extension);
+        if (parsedExtension.filter(TEXT_BASED_EXTENSIONS::contains).isPresent()) {
+            sendFileToRag(dialog.getId(), saved, file, parsedExtension.get());
         }
 
         return saved;
     }
 
-    private void sendFileToRag(Long dialogId, FileMetadata metadata, MultipartFile file, String extension) throws IOException {
-        String text = extractText(file, extension);
+    private void sendFileToRag(Long dialogId, FileMetadata metadata, MultipartFile file, ExtensionsEnum extension) throws IOException {
+        String text = FileParserFactory.getParser(extension).parse(file);
         if (text == null || text.isBlank()) {
             return;
         }
         FileInf fileInf = new FileInf(metadata.getId(), metadata.getOriginalFileName(), text);
         ragCommunicationService.loadFileToRag(dialogId, List.of(fileInf));
-    }
-
-    private String extractText(MultipartFile file, String extension) throws IOException {
-        return switch (extension) {
-            case PDF_EXTENSION -> pdfParsingService.parsePdf(file);
-            case DOCX_EXTENSION -> docxParsingService.parseDocx(file);
-            default -> "";
-        };
     }
 
     private String validateExtension(String filename) {

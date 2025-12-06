@@ -19,11 +19,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RagCommunicationService {
 
-    private final DialogRepository dialogRepository;
-    private final FileMetadataRepository fileMetadataRepository;
     private final MessageRepository messageRepository;
     private final RagRestClient ragRestClient;
-    private final PdfParsingService pdfParsingService;
 
     public MessageResponse sendQuestionToRag(Long dialogId, Message question) {
         List<DialogMessagesDto> dialogMessages = new ArrayList<>();

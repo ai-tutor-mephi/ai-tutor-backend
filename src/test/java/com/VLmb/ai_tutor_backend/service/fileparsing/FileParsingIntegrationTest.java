@@ -1,4 +1,4 @@
-package com.VLmb.ai_tutor_backend.service;
+package com.VLmb.ai_tutor_backend.service.fileparsing;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -21,10 +21,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class FileParsingIntegrationTest {
 
     @Autowired
-    private PdfParsingService pdfParsingService;
+    private PdfFileParser pdfFileParser;
 
     @Autowired
-    private DocxParsingService docxParsingService;
+    private DocxFileParser docxFileParser;
+
+    @Autowired
+    private TxtFileParser txtFileParser;
 
     @Test
     void pdfParsingBean_shouldExtractText() throws IOException {
@@ -36,7 +39,7 @@ class FileParsingIntegrationTest {
                 createPdfBytes(expected)
         );
 
-        String actual = pdfParsingService.parsePdf(pdfFile);
+        String actual = pdfFileParser.parse(pdfFile);
 
         assertThat(actual).contains(expected);
     }
@@ -51,9 +54,24 @@ class FileParsingIntegrationTest {
                 createDocxBytes(expected)
         );
 
-        String actual = docxParsingService.parseDocx(docxFile);
+        String actual = docxFileParser.parse(docxFile);
 
         assertThat(actual).contains(expected);
+    }
+
+    @Test
+    void txtParsingBean_shouldExtractText() throws IOException {
+        String expected = "Integration\nTXT text";
+        MockMultipartFile txtFile = new MockMultipartFile(
+                "file",
+                "integration.txt",
+                "text/plain",
+                expected.getBytes()
+        );
+
+        String actual = txtFileParser.parse(txtFile);
+
+        assertThat(actual).contains("Integration").contains("TXT text");
     }
 
     private byte[] createPdfBytes(String content) throws IOException {

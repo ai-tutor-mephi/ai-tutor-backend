@@ -2,27 +2,35 @@ package com.VLmb.ai_tutor_backend.integration;
 
 import com.VLmb.ai_tutor_backend.dto.*;
 import com.VLmb.ai_tutor_backend.repository.*;
-import org.junit.jupiter.api.AfterAll;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.io.File;
 import java.util.List;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.reset;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+@AutoConfigureWireMock(port = 0)
+@TestPropertySource(properties = {
+        "clients.rag.base-url=http://localhost:${wiremock.server.port}"
+})
 public class DialogControllerIntegrationTest {
 
     @Autowired
@@ -50,6 +58,30 @@ public class DialogControllerIntegrationTest {
         fileMetadataRepository.deleteAll();
         dialogRepository.deleteAll();
         userRepository.deleteAll();
+
+        reset();
+    }
+
+    private void stubRag() {
+        stubFor(post(urlPathMatching("/rag/load-files"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {
+                                  "answer": "stub-answer-from-wiremock"
+                                }
+                                """)));
+    }
+
+    private void logRagRequests() {
+        List<LoggedRequest> requests = findAll(postRequestedFor(urlPathMatching("/rag/load-files")));
+        for (LoggedRequest req : requests) {
+            System.out.println("=== RAG REQUEST ===");
+            System.out.println("URL:   " + req.getUrl());
+            System.out.println("BODY:  " + req.getBodyAsString());
+            System.out.println("===================");
+        }
     }
 
     private String registerAndLoginUser(String username, String email, String password) {
@@ -93,9 +125,11 @@ public class DialogControllerIntegrationTest {
 
     @Test
     void shouldCreateDialogWithFile() {
+        stubRag();
+
         String accessToken = registerAndLoginUser("username", "email@email.com", "password1234");
 
-        FileSystemResource resource = new FileSystemResource(new File("src/test/resources/test-file-1.txt"));
+        FileSystemResource resource = new FileSystemResource(new File("src/test/resources/test-horse.txt"));
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("files", resource);
@@ -117,13 +151,17 @@ public class DialogControllerIntegrationTest {
         assertNotNull(response.getBody());
         assertNotNull(response.getBody().dialogId());
         assertNotNull(response.getBody().title());
+
+        logRagRequests();
     }
 
     @Test
     void shouldUpdateDialogWithFiles() {
+        stubRag();
+
         String accessToken = registerAndLoginUser("username", "email@email.com", "password1234");
 
-        FileSystemResource resource = new FileSystemResource(new File("src/test/resources/test-file-1.txt"));
+        FileSystemResource resource = new FileSystemResource(new File("src/test/resources/test-penguin.pdf"));
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("files", resource);
@@ -163,11 +201,13 @@ public class DialogControllerIntegrationTest {
         assertNotNull(responseForUpdate.getBody().get(1));
         assertNotNull(responseForUpdate.getBody().get(0).fileId());
         assertNotNull(responseForUpdate.getBody().get(1).fileId());
+
+        logRagRequests();
     }
 
     private static HttpEntity<MultiValueMap<String, Object>> getMultiValueMapHttpEntity(HttpHeaders headers) {
-        FileSystemResource resource1 = new FileSystemResource(new File("src/test/resources/test-file-2.md"));
-        FileSystemResource resource2 = new FileSystemResource(new File("src/test/resources/test-image-1.jpg"));
+        FileSystemResource resource1 = new FileSystemResource(new File("src/test/resources/test-horse.txt"));
+        FileSystemResource resource2 = new FileSystemResource(new File("src/test/resources/test-donkey.docx"));
 
         MultiValueMap<String, Object> bodyForUpdate = new LinkedMultiValueMap<>();
         bodyForUpdate.add("files", resource1);
@@ -179,10 +219,12 @@ public class DialogControllerIntegrationTest {
 
     @Test
     void shouldGetFilesFromDialog() {
+        stubRag();
+
         String accessToken = registerAndLoginUser("user1", "user1@email.com", "password1234");
 
-        FileSystemResource file1 = new FileSystemResource(new File("src/test/resources/test-file-1.txt"));
-        FileSystemResource file2 = new FileSystemResource(new File("src/test/resources/test-file-2.md"));
+        FileSystemResource file1 = new FileSystemResource(new File("src/test/resources/test-donkey.docx"));
+        FileSystemResource file2 = new FileSystemResource(new File("src/test/resources/test-penguin.pdf"));
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("files", file1);
         body.add("files", file2);
@@ -225,9 +267,11 @@ public class DialogControllerIntegrationTest {
 
     @Test
     void shouldGetAllDialogsForUser() {
+        stubRag();
+
         String accessToken = registerAndLoginUser("user2", "user2@email.com", "password1234");
 
-        FileSystemResource file = new FileSystemResource(new File("src/test/resources/test-file-1.txt"));
+        FileSystemResource file = new FileSystemResource(new File("src/test/resources/test-horse.txt"));
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("files", file);
 
@@ -270,9 +314,11 @@ public class DialogControllerIntegrationTest {
 
     @Test
     void shouldDeleteDialog() {
+        stubRag();
+
         String accessToken = registerAndLoginUser("user3", "user3@email.com", "password1234");
 
-        FileSystemResource file = new FileSystemResource(new File("src/test/resources/test-file-1.txt"));
+        FileSystemResource file = new FileSystemResource(new File("src/test/resources/test-horse.txt"));
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("files", file);
 
@@ -321,5 +367,4 @@ public class DialogControllerIntegrationTest {
         assertNotNull(listResp.getBody());
         assertEquals(0, listResp.getBody().size());
     }
-
 }

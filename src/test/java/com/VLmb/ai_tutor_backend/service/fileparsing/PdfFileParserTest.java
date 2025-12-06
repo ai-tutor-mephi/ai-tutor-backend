@@ -1,4 +1,4 @@
-package com.VLmb.ai_tutor_backend.service;
+package com.VLmb.ai_tutor_backend.service.fileparsing;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -13,12 +13,12 @@ import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class PdfParsingServiceTest {
+class PdfFileParserTest {
 
-    private final PdfParsingService pdfParsingService = new PdfParsingService();
+    private final PdfFileParser parser = new PdfFileParser();
 
     @Test
-    void parsePdf_shouldReturnPdfText() throws IOException {
+    void parse_shouldReturnPdfText() throws IOException {
         String expectedText = "PDF parsing works";
         MockMultipartFile pdfFile = new MockMultipartFile(
                 "file",
@@ -27,7 +27,7 @@ class PdfParsingServiceTest {
                 createPdfBytes(expectedText)
         );
 
-        String actualText = pdfParsingService.parsePdf(pdfFile);
+        String actualText = parser.parse(pdfFile);
 
         assertThat(actualText).contains(expectedText);
     }

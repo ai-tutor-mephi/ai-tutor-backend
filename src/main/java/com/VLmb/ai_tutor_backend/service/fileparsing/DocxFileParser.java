@@ -1,18 +1,19 @@
-package com.VLmb.ai_tutor_backend.service;
+package com.VLmb.ai_tutor_backend.service.fileparsing;
 
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.stream.Collectors;
 
-@Service
-public class DocxParsingService {
+@Component
+public class DocxFileParser implements FileParser {
 
-    public String parseDocx(MultipartFile file) throws IOException {
+    @Override
+    public String parse(MultipartFile file) throws IOException {
         try (InputStream inputStream = file.getInputStream();
              XWPFDocument document = new XWPFDocument(inputStream)) {
             return document.getParagraphs()

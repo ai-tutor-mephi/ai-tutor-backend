@@ -1,4 +1,4 @@
-package com.VLmb.ai_tutor_backend.service;
+package com.VLmb.ai_tutor_backend.service.fileparsing;
 
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
@@ -10,12 +10,12 @@ import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class DocxParsingServiceTest {
+class DocxFileParserTest {
 
-    private final DocxParsingService docxParsingService = new DocxParsingService();
+    private final DocxFileParser parser = new DocxFileParser();
 
     @Test
-    void parseDocx_shouldReturnParagraphText() throws IOException {
+    void parse_shouldReturnParagraphText() throws IOException {
         String expectedText = "DOCX parsing works too";
         MockMultipartFile docxFile = new MockMultipartFile(
                 "file",
@@ -24,7 +24,7 @@ class DocxParsingServiceTest {
                 createDocxBytes(expectedText)
         );
 
-        String actualText = docxParsingService.parseDocx(docxFile);
+        String actualText = parser.parse(docxFile);
 
         assertThat(actualText).contains(expectedText);
     }

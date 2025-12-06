@@ -9,7 +9,8 @@ import org.springframework.web.client.RestClient;
 public class RagRestClientImpl implements RagRestClient{
 
     private final RestClient client;
-    private final static String URL_PATH = "/rag/user-question";
+    private final static String SEND_MESSAGE_PATH = "/rag/user-question";
+    private final static String LOAD_FILES_PATH = "/rag/load-files";
 
     public RagRestClientImpl(RestClient ragRestClient) {
         this.client = ragRestClient;
@@ -19,7 +20,7 @@ public class RagRestClientImpl implements RagRestClient{
     public MessageResponse sendMessage(MessageRequestDto ragRequest) {
 
         return client.post()
-                .uri(URL_PATH)
+                .uri(SEND_MESSAGE_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(ragRequest)
@@ -27,11 +28,11 @@ public class RagRestClientImpl implements RagRestClient{
                 .body(MessageResponse.class);
     }
 
-    //Ошибки не обрабатываются, разобраться с повторными запросами
+    //Todo: Ошибки не обрабатываются, разобраться с повторными запросами
     @Override
     public void loadFile(LoadFileToRagDto request) {
         client.post()
-            .uri(URL_PATH)
+            .uri(LOAD_FILES_PATH)
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .body(request)
