@@ -83,6 +83,16 @@ public class DialogController {
         return ResponseEntity.ok(dialogs);
     }
 
+    @PatchMapping("/{dialogId}/change-title")
+    public ResponseEntity<DialogInfo> changeDialogTitle(
+            @PathVariable Long dialogId,
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @RequestBody ChangeDialogTitleRequest request) {
+
+        DialogInfo dialogInfo = dialogService.changeDialogTitle(dialogId, principal.getUser(), request.title());
+        return ResponseEntity.ok(dialogInfo);
+    }
+
     @DeleteMapping("/{dialogId}")
     public ResponseEntity<Void> deleteDialog(
             @PathVariable Long dialogId,

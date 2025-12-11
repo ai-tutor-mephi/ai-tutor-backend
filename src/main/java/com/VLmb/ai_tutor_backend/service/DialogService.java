@@ -1,11 +1,6 @@
 package com.VLmb.ai_tutor_backend.service;
 
-import com.VLmb.ai_tutor_backend.dto.DialogInfo;
-import com.VLmb.ai_tutor_backend.dto.DialogResponse;
-import com.VLmb.ai_tutor_backend.dto.FileInf;
-import com.VLmb.ai_tutor_backend.dto.FileResponse;
-import com.VLmb.ai_tutor_backend.dto.MessageRequest;
-import com.VLmb.ai_tutor_backend.dto.MessageResponse;
+import com.VLmb.ai_tutor_backend.dto.*;
 import com.VLmb.ai_tutor_backend.entity.Dialog;
 import com.VLmb.ai_tutor_backend.entity.FileMetadata;
 import com.VLmb.ai_tutor_backend.entity.Message;
@@ -215,6 +210,15 @@ public class DialogService {
         }
 
         dialogRepository.delete(dialog);
+    }
+
+    @Transactional
+    public DialogInfo changeDialogTitle(Long dialogId, User currentUser, String newTitle) {
+        Dialog dialog = getDialog(dialogId);
+        assertDialogOwner(dialog, currentUser);
+        dialog.setTitle(newTitle);
+        Dialog saved = dialogRepository.save(dialog);
+        return new DialogInfo(saved.getId(), saved.getTitle(), saved.getCreatedAt());
     }
 
     private Dialog getDialog(Long dialogId) {

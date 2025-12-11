@@ -130,6 +130,18 @@
           "createdAt"
         ]
       },
+      "ChangeDialogTitleRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 255
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
       "FileResponse": {
         "type": "object",
         "properties": {
@@ -681,6 +693,57 @@
         "responses": {
           "204": {
             "description": "Dialog deleted"
+          },
+          "404": {
+            "description": "Dialog not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Change dialog title",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dialogId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeDialogTitleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dialog title updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DialogInfo"
+                }
+              }
+            }
           },
           "404": {
             "description": "Dialog not found",
