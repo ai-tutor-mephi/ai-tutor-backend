@@ -52,13 +52,13 @@
 //        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
 //        when(responseSpec.body(MessageResponse.class)).thenReturn(expectedResponse);
 //
-//        MessageResponse actualResponse = ragRestClient.current(inputMessage);
+//        MessageResponse actualResponse = ragRestClient.sendMessage(inputMessage);
 //
 //        assertNotNull(actualResponse);
 //        assertEquals(expectedResponse, actualResponse);
 //
 //        verify(mockRestClient).post();
-//        verify(requestBodyUriSpec).uri("/v1/current");
+//        verify(requestBodyUriSpec).uri("/v1/sendMessage");
 //        verify(requestBodySpec).body(requestCaptor.capture());
 //
 //        MessageRequest capturedRequest = requestCaptor.getValue();
