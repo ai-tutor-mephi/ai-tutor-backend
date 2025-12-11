@@ -65,6 +65,16 @@ public class DialogController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping(path = "/{dialogId}/messages")
+    public ResponseEntity<DialogMessagesResponse> getMessagesFromDialog(
+            @PathVariable Long dialogId,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+
+        DialogMessagesResponse response = dialogService.getMessagesFromDialog(dialogId, principal.getUser());
+
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping
     public ResponseEntity<List<DialogInfo>> getAllDialogs(@AuthenticationPrincipal CustomUserDetails principal) {
 

@@ -122,6 +122,23 @@ public class DialogService {
     }
 
     @Transactional(readOnly = true)
+    public DialogMessagesResponse getMessagesFromDialog(Long dialogId, User currentUser) {
+        Dialog dialog = dialogRepository.findById(dialogId)
+                .orElseThrow(() -> new ResourceNotFoundException("Dialog", "id", dialogId));
+
+        if (!dialog.getOwner().getId().equals(currentUser.getId())) {
+            throw new SecurityException("User does not have permission to access this dialog");
+        }
+
+        List<DialogMessagesDto> messages = messageRepository.findByDialogIdOrderByCreatedAtDesc(dialogId)
+                .stream()
+                .map(message -> new DialogMessagesDto(message.getContent(), message.getRole()))
+                .collect(Collectors.toList());
+
+        return new DialogMessagesResponse(dialog.getId(), messages);
+    }
+
+    @Transactional(readOnly = true)
     public List<DialogInfo> getAllDialogsForUser(User currentUser) {
 
         return dialogRepository.findByOwnerIdOrderByCreatedAtDesc(currentUser.getId())

@@ -26,4 +26,4 @@ public class RagRestClientImpl implements RagRestClient{
                 .retrieve()
                 .body(MessageResponse.class);
     }
-d}
+}
