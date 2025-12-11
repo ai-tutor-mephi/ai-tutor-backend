@@ -46,6 +46,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/ai_tutor_db
       SPRING_DATASOURCE_USERNAME: tutor_user
       SPRING_DATASOURCE_PASSWORD: 88888888
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
       APP_MINIO_ENDPOINT: http://minio:9000
       APP_MINIO_ACCESS_KEY: minioadmin
       APP_MINIO_SECRET_KEY: minioadmin
@@ -68,6 +69,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/ai_tutor_db
       SPRING_DATASOURCE_USERNAME: tutor_user
       SPRING_DATASOURCE_PASSWORD: 88888888
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
       APP_MINIO_ENDPOINT: http://minio:9000
       APP_MINIO_ACCESS_KEY: minioadmin
       APP_MINIO_SECRET_KEY: minioadmin
