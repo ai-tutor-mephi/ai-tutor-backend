@@ -173,6 +173,44 @@
           "answer"
         ]
       },
+      "DialogMessagesDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "USER",
+              "BOT"
+            ]
+          }
+        },
+        "required": [
+          "message",
+          "role"
+        ]
+      },
+      "DialogMessagesResponse": {
+        "type": "object",
+        "properties": {
+          "dialogId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dialogMessages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DialogMessagesDto"
+            }
+          }
+        },
+        "required": [
+          "dialogId",
+          "dialogMessages"
+        ]
+      },
       "ErrorResponse": {
         "type": "object",
         "properties": {
@@ -561,6 +599,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Dialog not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dialogs/{dialogId}/messages": {
+      "get": {
+        "summary": "Get messages from a dialog (newest first)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dialogId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Messages retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DialogMessagesResponse"
                 }
               }
             }
