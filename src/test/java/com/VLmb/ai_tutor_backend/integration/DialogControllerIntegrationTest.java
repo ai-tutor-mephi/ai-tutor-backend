@@ -313,6 +313,95 @@ public class DialogControllerIntegrationTest {
     }
 
     @Test
+    void shouldChangeDialogTitle() {
+        stubRag();
+
+        String accessToken = registerAndLoginUser("user4", "user4@email.com", "password1234");
+
+        FileSystemResource file = new FileSystemResource(new File("src/test/resources/test-horse.txt"));
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("files", file);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.setBearerAuth(accessToken);
+
+        HttpEntity<MultiValueMap<String, Object>> createReq = new HttpEntity<>(body, headers);
+
+        ResponseEntity<DialogResponse> createResp = restTemplate.exchange(
+                "/api/dialogs/with-files",
+                HttpMethod.POST,
+                createReq,
+                DialogResponse.class
+        );
+
+        assertEquals(HttpStatus.CREATED, createResp.getStatusCode());
+        Long dialogId = createResp.getBody().dialogId();
+
+        HttpHeaders patchHeaders = new HttpHeaders();
+        patchHeaders.setBearerAuth(accessToken);
+        patchHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+        ChangeDialogTitleRequest changeRequest = new ChangeDialogTitleRequest("Updated title");
+        HttpEntity<ChangeDialogTitleRequest> patchReq = new HttpEntity<>(changeRequest, patchHeaders);
+
+        ResponseEntity<DialogInfo> patchResp = restTemplate.exchange(
+                "/api/dialogs/%d/change-title".formatted(dialogId),
+                HttpMethod.PATCH,
+                patchReq,
+                DialogInfo.class
+        );
+
+        assertEquals(HttpStatus.OK, patchResp.getStatusCode());
+        assertNotNull(patchResp.getBody());
+        assertEquals(dialogId, patchResp.getBody().dialogId());
+        assertEquals("Updated title", patchResp.getBody().title());
+    }
+
+    @Test
+    void shouldNotChangeDialogTitleWhenBlank() {
+        stubRag();
+
+        String accessToken = registerAndLoginUser("user5", "user5@email.com", "password1234");
+
+        FileSystemResource file = new FileSystemResource(new File("src/test/resources/test-horse.txt"));
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("files", file);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.setBearerAuth(accessToken);
+
+        HttpEntity<MultiValueMap<String, Object>> createReq = new HttpEntity<>(body, headers);
+
+        ResponseEntity<DialogResponse> createResp = restTemplate.exchange(
+                "/api/dialogs/with-files",
+                HttpMethod.POST,
+                createReq,
+                DialogResponse.class
+        );
+
+        assertEquals(HttpStatus.CREATED, createResp.getStatusCode());
+        Long dialogId = createResp.getBody().dialogId();
+
+        HttpHeaders patchHeaders = new HttpHeaders();
+        patchHeaders.setBearerAuth(accessToken);
+        patchHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+        ChangeDialogTitleRequest changeRequest = new ChangeDialogTitleRequest(" ");
+        HttpEntity<ChangeDialogTitleRequest> patchReq = new HttpEntity<>(changeRequest, patchHeaders);
+
+        ResponseEntity<String> patchResp = restTemplate.exchange(
+                "/api/dialogs/%d/change-title".formatted(dialogId),
+                HttpMethod.PATCH,
+                patchReq,
+                String.class
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, patchResp.getStatusCode());
+    }
+
+    @Test
     void shouldDeleteDialog() {
         stubRag();
 

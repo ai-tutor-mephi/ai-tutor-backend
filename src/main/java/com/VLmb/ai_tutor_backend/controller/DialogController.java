@@ -4,6 +4,7 @@ import com.VLmb.ai_tutor_backend.dto.*;
 import com.VLmb.ai_tutor_backend.dto.MessageRequest;
 import com.VLmb.ai_tutor_backend.service.CustomUserDetails;
 import com.VLmb.ai_tutor_backend.service.DialogService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -87,7 +88,7 @@ public class DialogController {
     public ResponseEntity<DialogInfo> changeDialogTitle(
             @PathVariable Long dialogId,
             @AuthenticationPrincipal CustomUserDetails principal,
-            @RequestBody ChangeDialogTitleRequest request) {
+            @Valid @RequestBody ChangeDialogTitleRequest request) {
 
         DialogInfo dialogInfo = dialogService.changeDialogTitle(dialogId, principal.getUser(), request.title());
         return ResponseEntity.ok(dialogInfo);

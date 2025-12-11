@@ -250,10 +250,101 @@
           "message",
           "path"
         ]
+      },
+      "ChangeUsernameRequest": {
+        "type": "object",
+        "properties": {
+          "userName": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 50
+          }
+        },
+        "required": [
+          "userName"
+        ]
+      },
+      "ChangeUsernameResponse": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "userName"
+        ]
       }
     }
   },
   "paths": {
+    "/api/user/change-username": {
+      "post": {
+        "summary": "Change current user's username",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeUsernameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Username updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeUsernameResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Username already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/register": {
       "post": {
         "summary": "Register a new user",
@@ -705,7 +796,9 @@
             }
           }
         }
-      },
+      }
+    },
+    "/api/dialogs/{dialogId}/change-title": {
       "patch": {
         "summary": "Change dialog title",
         "security": [
@@ -741,6 +834,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DialogInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }

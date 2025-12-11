@@ -1,8 +1,8 @@
 package com.VLmb.ai_tutor_backend.config;
 
-import com.VLmb.ai_tutor_backend.security.JwtAuthenticationFilter;
 import com.VLmb.ai_tutor_backend.security.JwtAccessDeniedHandler;
 import com.VLmb.ai_tutor_backend.security.JwtAuthenticationEntryPoint;
+import com.VLmb.ai_tutor_backend.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -34,7 +34,10 @@ public class SecurityConfig {
     private final JwtAccessDeniedHandler accessDeniedHandler;
     private final UserDetailsService userDetailsService;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtFilter, JwtAuthenticationEntryPoint entryPoint, JwtAccessDeniedHandler accessDeniedHandler, UserDetailsService userDetailsService) {
+    public SecurityConfig(JwtAuthenticationFilter jwtFilter,
+                          JwtAuthenticationEntryPoint entryPoint,
+                          JwtAccessDeniedHandler accessDeniedHandler,
+                          UserDetailsService userDetailsService) {
         this.jwtFilter = jwtFilter;
         this.entryPoint = entryPoint;
         this.accessDeniedHandler = accessDeniedHandler;
@@ -49,9 +52,9 @@ public class SecurityConfig {
         http.exceptionHandling(e -> e.authenticationEntryPoint(entryPoint).accessDeniedHandler(accessDeniedHandler));
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh", "/error").permitAll()
-                .requestMatchers(POST, "/api/auth/logout").authenticated() // КОСТЫЛЬ
+                .requestMatchers(POST, "/api/auth/logout").authenticated()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/dialogs/**", "/api/messages/**", "/api/files/**").authenticated()
+                .requestMatchers("/api/dialogs/**", "/api/messages/**", "/api/files/**", "/api/user/**").authenticated()
                 .anyRequest().denyAll()
         );
         http.authenticationProvider(authenticationProvider());
