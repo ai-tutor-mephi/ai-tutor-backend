@@ -14,6 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.VLmb.ai_tutor_backend.integration.TestEndpoints.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -46,7 +47,7 @@ public class UserControllerIntegrationTest {
         HttpEntity<ChangeUsernameRequest> request = new HttpEntity<>(requestBody, headers);
 
         ResponseEntity<ChangeUsernameResponse> response = restTemplate.exchange(
-                "/api/user/change-username",
+                USER_CHANGE_USERNAME,
                 HttpMethod.POST,
                 request,
                 ChangeUsernameResponse.class
@@ -71,7 +72,7 @@ public class UserControllerIntegrationTest {
         HttpEntity<ChangeUsernameRequest> request = new HttpEntity<>(requestBody, headers);
 
         ResponseEntity<String> response = restTemplate.exchange(
-                "/api/user/change-username",
+                USER_CHANGE_USERNAME,
                 HttpMethod.POST,
                 request,
                 String.class
@@ -93,7 +94,7 @@ public class UserControllerIntegrationTest {
         HttpEntity<RegisterUserRequest> request = new HttpEntity<>(registerRequest, headers);
 
         restTemplate.exchange(
-                "/api/auth/register",
+                AUTH_REGISTER,
                 HttpMethod.POST,
                 request,
                 String.class
@@ -107,7 +108,7 @@ public class UserControllerIntegrationTest {
         HttpEntity<LoginRequest> requestForLogin = new HttpEntity<>(loginRequest, headers);
 
         ResponseEntity<AuthResponse> loginResponse = restTemplate.exchange(
-                "/api/auth/login",
+                AUTH_LOGIN,
                 HttpMethod.POST,
                 requestForLogin,
                 AuthResponse.class

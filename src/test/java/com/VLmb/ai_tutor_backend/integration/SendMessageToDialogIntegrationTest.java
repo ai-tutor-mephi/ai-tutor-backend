@@ -27,6 +27,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.VLmb.ai_tutor_backend.integration.TestEndpoints.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWireMock(port = 0)
@@ -56,7 +57,7 @@ public class SendMessageToDialogIntegrationTest {
 
     @Test
     void shouldCallExternalServiceViaClient() {
-        stubFor(post(urlEqualTo("/rag/user-question"))
+        stubFor(post(urlEqualTo(RAG_QUERY))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -66,7 +67,7 @@ public class SendMessageToDialogIntegrationTest {
             }
         """)));
 
-        stubFor(post(urlEqualTo("/rag/load-files"))
+        stubFor(post(urlEqualTo(RAG_LOAD))
                 .willReturn(aResponse()
                         .withStatus(200)));
 
@@ -84,7 +85,7 @@ public class SendMessageToDialogIntegrationTest {
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
         ResponseEntity<DialogResponse> response = restTemplate.exchange(
-                "/api/dialogs/with-files",
+                DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 requestEntity,
                 DialogResponse.class
@@ -100,7 +101,7 @@ public class SendMessageToDialogIntegrationTest {
         HttpEntity<MessageRequest> requestEntityForRag = new HttpEntity<>(messageRequest, headers);
 
         ResponseEntity<MessageResponse> answer = restTemplate.exchange(
-                "/api/dialogs/%d/send-question".formatted(response.getBody().dialogId()),
+                DIALOG_SEND_QUESTION.formatted(response.getBody().dialogId()),
                 HttpMethod.POST,
                 requestEntityForRag,
                 MessageResponse.class
@@ -110,14 +111,14 @@ public class SendMessageToDialogIntegrationTest {
         assertNotNull(answer.getBody());
         assertEquals("Yeah, you're absolutely right, my friend.", answer.getBody().answer());
 
-        verify(postRequestedFor(urlEqualTo("/rag/user-question")));
+        verify(postRequestedFor(urlEqualTo(RAG_QUERY)));
     }
 
     @Test
     void shouldSendMessageToDialogWithMockedRagService() {
         String accessToken = registerAndLoginUser("dialogUser", "dialogUser@email.com", "password1234");
 
-        stubFor(post(urlEqualTo("/rag/load-files"))
+        stubFor(post(urlEqualTo(RAG_LOAD))
                 .willReturn(aResponse()
                         .withStatus(200)));
 
@@ -132,7 +133,7 @@ public class SendMessageToDialogIntegrationTest {
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
         ResponseEntity<DialogResponse> dialogResponse = restTemplate.exchange(
-                "/api/dialogs/with-files",
+                DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 requestEntity,
                 DialogResponse.class
@@ -165,7 +166,7 @@ public class SendMessageToDialogIntegrationTest {
         HttpEntity<MessageRequest> requestEntityForSend = new HttpEntity<>(messageRequest, headers);
 
         ResponseEntity<MessageResponse> response = restTemplate.exchange(
-                "/api/dialogs/%d/send-question".formatted(dialogId),
+                DIALOG_SEND_QUESTION.formatted(dialogId),
                 HttpMethod.POST,
                 requestEntityForSend,
                 MessageResponse.class
@@ -194,7 +195,7 @@ public class SendMessageToDialogIntegrationTest {
         HttpEntity<RegisterUserRequest> request = new HttpEntity<>(registerRequest, headers);
 
         ResponseEntity<String> response = restTemplate.exchange(
-                "/api/auth/register",
+                AUTH_REGISTER,
                 HttpMethod.POST,
                 request,
                 String.class
@@ -208,7 +209,7 @@ public class SendMessageToDialogIntegrationTest {
         HttpEntity<LoginRequest> requestForLogin = new HttpEntity<>(loginRequest, headers);
 
         ResponseEntity<AuthResponse> loginResponse = restTemplate.exchange(
-                "/api/auth/login",
+                AUTH_LOGIN,
                 HttpMethod.POST,
                 requestForLogin,
                 AuthResponse.class

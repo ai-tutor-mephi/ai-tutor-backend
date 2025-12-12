@@ -3,7 +3,7 @@ spring:
     name: ai-tutor-backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/ai_tutor_db
+    url: jdbc:postgresql://db:5432/ai_tutor_db
     userName: tutor_user
     password: 88888888
 
@@ -32,7 +32,7 @@ security:
 
 app:
   minio:
-    endpoint: http://localhost:9000
+    endpoint: http://minio:9000
     access-key: minioadmin
     secret-key: minioadmin
     bucket-name: ai-tutor-files
@@ -40,7 +40,7 @@ app:
 
 clients:
   rag:
-    base-url: https://localhost:8000
+    base-url: http://rag:8000
     connect-timeout: 2s
     response-timeout: 1200s
     max-in-memory-size: 1MB
@@ -51,4 +51,6 @@ clients:
 
 logging:
   level:
-    org.springframework.security: TRACE
+    org.springframework.security: INFO
+    org.springframework.security.web.FilterChainProxy: WARN
+    org.springframework.web: INFO

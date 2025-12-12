@@ -117,7 +117,7 @@ public class DialogService {
         if (text == null || text.isBlank()) {
             return;
         }
-        FileInf fileInf = new FileInf(metadata.getId(), metadata.getOriginalFileName(), text);
+        FileInf fileInf = new FileInf(metadata.getId().toString(), metadata.getOriginalFileName(), text);
         ragCommunicationService.loadFileToRag(dialogId, List.of(fileInf));
     }
 
@@ -160,7 +160,7 @@ public class DialogService {
             throw new SecurityException("User does not have permission to access this dialog");
         }
 
-        List<DialogMessagesDto> messages = messageRepository.findByDialogIdOrderByCreatedAtDesc(dialogId)
+        List<DialogMessagesDto> messages = messageRepository.findByDialogIdOrderByCreatedAt(dialogId)
                 .stream()
                 .map(message -> new DialogMessagesDto(message.getContent(), message.getRole()))
                 .collect(Collectors.toList());

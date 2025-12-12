@@ -29,7 +29,7 @@ public class RagCommunicationService {
         }
 
         return ragRestClient.sendMessage(new MessageRequestDto(
-                dialogId,
+                dialogId.toString(),
                 dialogMessages,
                 question.getContent()
         ));
@@ -38,7 +38,7 @@ public class RagCommunicationService {
     public void loadFileToRag(Long dialogId, List<FileInf> files) {
         LoadFileToRagDto request = new LoadFileToRagDto(
                 files,
-                dialogId
+                dialogId.toString()
         );
 
         ragRestClient.loadFile(request);

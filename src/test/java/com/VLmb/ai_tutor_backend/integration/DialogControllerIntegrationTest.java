@@ -24,6 +24,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.reset;
+import static com.VLmb.ai_tutor_backend.integration.TestEndpoints.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -63,7 +64,7 @@ public class DialogControllerIntegrationTest {
     }
 
     private void stubRag() {
-        stubFor(post(urlPathMatching("/rag/load-files"))
+        stubFor(post(urlPathMatching(RAG_LOAD))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -75,7 +76,7 @@ public class DialogControllerIntegrationTest {
     }
 
     private void logRagRequests() {
-        List<LoggedRequest> requests = findAll(postRequestedFor(urlPathMatching("/rag/load-files")));
+        List<LoggedRequest> requests = findAll(postRequestedFor(urlPathMatching(RAG_LOAD)));
         for (LoggedRequest req : requests) {
             System.out.println("=== RAG REQUEST ===");
             System.out.println("URL:   " + req.getUrl());
@@ -97,7 +98,7 @@ public class DialogControllerIntegrationTest {
         HttpEntity<RegisterUserRequest> request = new HttpEntity<>(registerRequest, headers);
 
         ResponseEntity<String> response = restTemplate.exchange(
-                "/api/auth/register",
+                AUTH_REGISTER,
                 HttpMethod.POST,
                 request,
                 String.class
@@ -111,7 +112,7 @@ public class DialogControllerIntegrationTest {
         HttpEntity<LoginRequest> requestForLogin = new HttpEntity<>(loginRequest, headers);
 
         ResponseEntity<AuthResponse> loginResponse = restTemplate.exchange(
-                "/api/auth/login",
+                AUTH_LOGIN,
                 HttpMethod.POST,
                 requestForLogin,
                 AuthResponse.class
@@ -141,7 +142,7 @@ public class DialogControllerIntegrationTest {
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
         ResponseEntity<DialogResponse> response = restTemplate.exchange(
-                "/api/dialogs/with-files",
+                DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 requestEntity,
                 DialogResponse.class
@@ -173,7 +174,7 @@ public class DialogControllerIntegrationTest {
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
         ResponseEntity<DialogResponse> response = restTemplate.exchange(
-                "/api/dialogs/with-files",
+                DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 requestEntity,
                 DialogResponse.class
@@ -189,7 +190,7 @@ public class DialogControllerIntegrationTest {
         var dialogId = response.getBody().dialogId();
 
         ResponseEntity<List<FileResponse>> responseForUpdate = restTemplate.exchange(
-                "/api/dialogs/%d/files".formatted(dialogId),
+                DIALOG_FILES.formatted(dialogId),
                 HttpMethod.POST,
                 requestEntityForUpdate,
                 new ParameterizedTypeReference<List<FileResponse>>() {}
@@ -236,7 +237,7 @@ public class DialogControllerIntegrationTest {
         HttpEntity<MultiValueMap<String, Object>> createReq = new HttpEntity<>(body, headers);
 
         ResponseEntity<DialogResponse> createResp = restTemplate.exchange(
-                "/api/dialogs/with-files",
+                DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 createReq,
                 DialogResponse.class
@@ -252,7 +253,7 @@ public class DialogControllerIntegrationTest {
         }});
 
         ResponseEntity<List<FileResponse>> getResp = restTemplate.exchange(
-                "/api/dialogs/%d/files".formatted(dialogId),
+                DIALOG_FILES.formatted(dialogId),
                 HttpMethod.GET,
                 getReq,
                 new ParameterizedTypeReference<List<FileResponse>>() {}
@@ -282,7 +283,7 @@ public class DialogControllerIntegrationTest {
         HttpEntity<MultiValueMap<String, Object>> createReq = new HttpEntity<>(body, headers);
 
         ResponseEntity<DialogResponse> createResp = restTemplate.exchange(
-                "/api/dialogs/with-files",
+                DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 createReq,
                 DialogResponse.class
@@ -299,7 +300,7 @@ public class DialogControllerIntegrationTest {
         HttpEntity<Void> getReq = new HttpEntity<>(null, getHeaders);
 
         ResponseEntity<List<DialogInfo>> listResp = restTemplate.exchange(
-                "/api/dialogs",
+                DIALOGS,
                 HttpMethod.GET,
                 getReq,
                 new ParameterizedTypeReference<List<DialogInfo>>() {}
@@ -329,7 +330,7 @@ public class DialogControllerIntegrationTest {
         HttpEntity<MultiValueMap<String, Object>> createReq = new HttpEntity<>(body, headers);
 
         ResponseEntity<DialogResponse> createResp = restTemplate.exchange(
-                "/api/dialogs/with-files",
+                DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 createReq,
                 DialogResponse.class
@@ -346,7 +347,7 @@ public class DialogControllerIntegrationTest {
         HttpEntity<ChangeDialogTitleRequest> patchReq = new HttpEntity<>(changeRequest, patchHeaders);
 
         ResponseEntity<DialogInfo> patchResp = restTemplate.exchange(
-                "/api/dialogs/%d/change-title".formatted(dialogId),
+                DIALOG_CHANGE_TITLE.formatted(dialogId),
                 HttpMethod.PATCH,
                 patchReq,
                 DialogInfo.class
@@ -375,7 +376,7 @@ public class DialogControllerIntegrationTest {
         HttpEntity<MultiValueMap<String, Object>> createReq = new HttpEntity<>(body, headers);
 
         ResponseEntity<DialogResponse> createResp = restTemplate.exchange(
-                "/api/dialogs/with-files",
+                DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 createReq,
                 DialogResponse.class
@@ -392,7 +393,7 @@ public class DialogControllerIntegrationTest {
         HttpEntity<ChangeDialogTitleRequest> patchReq = new HttpEntity<>(changeRequest, patchHeaders);
 
         ResponseEntity<String> patchResp = restTemplate.exchange(
-                "/api/dialogs/%d/change-title".formatted(dialogId),
+                DIALOG_CHANGE_TITLE.formatted(dialogId),
                 HttpMethod.PATCH,
                 patchReq,
                 String.class
@@ -418,7 +419,7 @@ public class DialogControllerIntegrationTest {
         HttpEntity<MultiValueMap<String, Object>> createReq = new HttpEntity<>(body, headers);
 
         ResponseEntity<DialogResponse> createResp = restTemplate.exchange(
-                "/api/dialogs/with-files",
+                DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 createReq,
                 DialogResponse.class
@@ -435,7 +436,7 @@ public class DialogControllerIntegrationTest {
         HttpEntity<Void> delReq = new HttpEntity<>(null, delHeaders);
 
         ResponseEntity<Void> delResp = restTemplate.exchange(
-                "/api/dialogs/%d".formatted(dialogId),
+                DIALOG_DELETE.formatted(dialogId),
                 HttpMethod.DELETE,
                 delReq,
                 Void.class
@@ -446,7 +447,7 @@ public class DialogControllerIntegrationTest {
         HttpEntity<Void> listReq = new HttpEntity<>(null, delHeaders);
 
         ResponseEntity<List<DialogInfo>> listResp = restTemplate.exchange(
-                "/api/dialogs",
+                DIALOGS,
                 HttpMethod.GET,
                 listReq,
                 new ParameterizedTypeReference<List<DialogInfo>>() {}

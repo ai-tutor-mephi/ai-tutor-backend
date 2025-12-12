@@ -17,6 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static com.VLmb.ai_tutor_backend.integration.TestEndpoints.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -51,7 +52,7 @@ public class AuthControllerIntegrationTest {
         HttpEntity<RegisterUserRequest> request = new HttpEntity<>(registerRequest, headers);
 
         ResponseEntity<String> response = restTemplate.exchange(
-                "/api/auth/register",
+                AUTH_REGISTER,
                 HttpMethod.POST,
                 request,
                 String.class
@@ -76,7 +77,7 @@ public class AuthControllerIntegrationTest {
         HttpEntity<LoginRequest> request = new HttpEntity<>(loginRequest, headers);
 
         ResponseEntity<AuthResponse> response = restTemplate.exchange(
-                "/api/auth/login",
+                AUTH_LOGIN,
                 HttpMethod.POST,
                 request,
                 AuthResponse.class
@@ -105,7 +106,7 @@ public class AuthControllerIntegrationTest {
         HttpEntity<LoginRequest> requestForLogin = new HttpEntity<>(loginRequest, headers);
 
         ResponseEntity<AuthResponse> loginResponse = restTemplate.exchange(
-                "/api/auth/login",
+                AUTH_LOGIN,
                 HttpMethod.POST,
                 requestForLogin,
                 AuthResponse.class
@@ -120,7 +121,7 @@ public class AuthControllerIntegrationTest {
         HttpEntity<TokenRefreshRequest> request = new HttpEntity<>(refreshRequest, headers);
 
         ResponseEntity<AuthResponse> response = restTemplate.exchange(
-                "/api/auth/refresh",
+                AUTH_REFRESH,
                 HttpMethod.POST,
                 request,
                 AuthResponse.class
@@ -145,7 +146,7 @@ public class AuthControllerIntegrationTest {
         HttpEntity<RegisterUserRequest> request = new HttpEntity<>(registerRequest, headers);
 
         ResponseEntity<String> response = restTemplate.exchange(
-                "/api/auth/register",
+                AUTH_REGISTER,
                 HttpMethod.POST,
                 request,
                 String.class

@@ -9,8 +9,8 @@ import org.springframework.web.client.RestClient;
 public class RagRestClientImpl implements RagRestClient{
 
     private final RestClient client;
-    private final static String SEND_MESSAGE_PATH = "/rag/user-question";
-    private final static String LOAD_FILES_PATH = "/rag/load-files";
+    private final static String SEND_MESSAGE_PATH = "/query";
+    private final static String LOAD_FILES_PATH = "/load";
 
     public RagRestClientImpl(RestClient ragRestClient) {
         this.client = ragRestClient;

@@ -1,7 +1,7 @@
 package com.VLmb.ai_tutor_backend.dto;
 
 public record FileInf(
-        Long fileId,
+        String fileId,
         String fileName,
         String text
 ) {

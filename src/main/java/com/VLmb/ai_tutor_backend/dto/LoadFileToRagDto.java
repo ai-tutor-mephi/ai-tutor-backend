@@ -4,6 +4,6 @@ import java.util.List;
 
 public record LoadFileToRagDto(
         List<FileInf> content,
-        Long dialogId
+        String dialogId
 ) {
 }

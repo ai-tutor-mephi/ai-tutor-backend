@@ -4,7 +4,6 @@ import com.VLmb.ai_tutor_backend.dto.AuthResponse;
 import com.VLmb.ai_tutor_backend.dto.LoginRequest;
 import com.VLmb.ai_tutor_backend.dto.RegisterUserRequest;
 import com.VLmb.ai_tutor_backend.dto.TokenRefreshRequest;
-import com.VLmb.ai_tutor_backend.entity.User;
 import com.VLmb.ai_tutor_backend.service.AuthService;
 import com.VLmb.ai_tutor_backend.service.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -12,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
