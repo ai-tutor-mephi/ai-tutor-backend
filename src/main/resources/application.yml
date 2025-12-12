@@ -3,9 +3,9 @@ spring:
     name: ai-tutor-backend
 
   datasource:
-    url: jdbc:postgresql://db:5432/ai_tutor_db
-    userName: tutor_user
-    password: 88888888
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ai_tutor_db}
+    username: ${SPRING_DATASOURCE_USERNAME:tutor_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:88888888}
 
   jpa:
     hibernate:
@@ -25,29 +25,29 @@ server:
 
 security:
   jwt:
-    secret: jbxAUJMPcDpMKDbrLrHTPUrPBnWsIggGxtHkGHYqCBCkpQDVrxSVVDlVKdrKSzzOqwyaAzsiEnBOatSZLJGVkSA
-    access-expiration: 900
-    refresh-expiration: 2592000
-    issuer: ai-tutor-backend
+    secret: ${SECURITY_JWT_SECRET:jbxAUJMPcDpMKDbrLrHTPUrPBnWsIggGxtHkGHYqCBCkpQDVrxSVVDlVKdrKSzzOqwyaAzsiEnBOatSZLJGVkSA}
+    access-expiration: ${SECURITY_JWT_ACCESS_EXPIRATION:900}
+    refresh-expiration: ${SECURITY_JWT_REFRESH_EXPIRATION:2592000}
+    issuer: ${SECURITY_JWT_ISSUER:ai-tutor-backend}
 
 app:
   minio:
-    endpoint: http://minio:9000
-    access-key: minioadmin
-    secret-key: minioadmin
-    bucket-name: ai-tutor-files
-    region: us-east-1
+    endpoint: ${APP_MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${APP_MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${APP_MINIO_SECRET_KEY:minioadmin}
+    bucket-name: ${APP_MINIO_BUCKET:ai-tutor-files}
+    region: ${APP_MINIO_REGION:us-east-1}
 
 clients:
   rag:
-    base-url: http://rag:8000
-    connect-timeout: 2s
-    response-timeout: 1200s
-    max-in-memory-size: 1MB
-    log-payloads: true
+    base-url: ${CLIENTS_RAG_BASE_URL:http://localhost:8000}
+    connect-timeout: ${CLIENTS_RAG_CONNECT_TIMEOUT:2s}
+    response-timeout: ${CLIENTS_RAG_RESPONSE_TIMEOUT:1200s}
+    max-in-memory-size: ${CLIENTS_RAG_MAX_IN_MEMORY_SIZE:1MB}
+    log-payloads: ${CLIENTS_RAG_LOG_PAYLOADS:true}
     retry:
-      max-attempts: 3
-      backoff: 200ms
+      max-attempts: ${CLIENTS_RAG_RETRY_MAX_ATTEMPTS:3}
+      backoff: ${CLIENTS_RAG_RETRY_BACKOFF:200ms}
 
 logging:
   level:

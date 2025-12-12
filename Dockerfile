@@ -9,8 +9,8 @@ COPY src ./src
 RUN mvn clean package -Dmaven.test.skip=true
 
 # ------------------ Stage для тестов ------------------
-#FROM builder AS tester
-#CMD ["mvn", "test", "-Dspring.profiles.active=test"]
+FROM builder AS tester
+CMD ["mvn", "test", "-Dspring.profiles.active=test"]
 
 # ------------------ Stage для прод-образа ------------------
 FROM eclipse-temurin:17-jre-jammy

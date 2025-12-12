@@ -19,6 +19,6 @@ public final class TestEndpoints {
     public static final String DIALOG_DELETE = "/api/dialogs/%d";
     public static final String DIALOG_SEND_QUESTION = "/api/dialogs/%d/send-question";
 
-    public static final String RAG_LOAD = "/rag/load";
-    public static final String RAG_QUERY = "/rag/query";
+    public static final String RAG_LOAD = "/load";
+    public static final String RAG_QUERY = "/query";
 }
