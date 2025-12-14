@@ -3,13 +3,13 @@ services:
     image: postgres:15
     container_name: ai-tutor-db
     environment:
-      POSTGRES_DB: ai_tutor_db
-      POSTGRES_USER: tutor_user
-      POSTGRES_PASSWORD: 88888888
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tutor_user -d ai_tutor_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 3s
       timeout: 3s
       retries: 20
@@ -20,11 +20,11 @@ services:
     image: minio/minio:latest
     container_name: ai-tutor-minio
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
@@ -41,15 +41,16 @@ services:
       context: .
     container_name: ai-tutor-app
     ports:
-      - "8080:8080"
+      - "${APP_PORT:-8080}:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://ai-tutor-db:5432/ai_tutor_db
-      SPRING_DATASOURCE_USERNAME: tutor_user
-      SPRING_DATASOURCE_PASSWORD: 88888888
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      APP_MINIO_ENDPOINT: http://minio:9000
-      APP_MINIO_ACCESS_KEY: minioadmin
-      APP_MINIO_SECRET_KEY: minioadmin
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ai-tutor-db:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
+
+      APP_MINIO_ENDPOINT: ${APP_MINIO_ENDPOINT:-http://minio:9000}
+      APP_MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      APP_MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
     depends_on:
       db:
         condition: service_healthy
@@ -66,13 +67,14 @@ services:
     volumes:
       - ./logs:/app/logs
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/ai_tutor_db
-      SPRING_DATASOURCE_USERNAME: tutor_user
-      SPRING_DATASOURCE_PASSWORD: 88888888
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      APP_MINIO_ENDPOINT: http://minio:9000
-      APP_MINIO_ACCESS_KEY: minioadmin
-      APP_MINIO_SECRET_KEY: minioadmin
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
+
+      APP_MINIO_ENDPOINT: ${APP_MINIO_ENDPOINT:-http://minio:9000}
+      APP_MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      APP_MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
     depends_on:
       db:
         condition: service_healthy
