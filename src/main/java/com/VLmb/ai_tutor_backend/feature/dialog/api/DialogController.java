@@ -1,0 +1,112 @@
+package com.VLmb.ai_tutor_backend.feature.dialog.api;
+
+import com.VLmb.ai_tutor_backend.feature.auth.application.CustomUserDetails;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.ChangeDialogTitleRequest;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.DialogInfo;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.DialogMessagesResponse;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.DialogResponse;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.MessageRequest;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.MessageResponse;
+import com.VLmb.ai_tutor_backend.feature.dialog.application.DialogService;
+import com.VLmb.ai_tutor_backend.feature.file.application.FileResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/dialogs")
+@RequiredArgsConstructor
+public class DialogController {
+
+    private final DialogService dialogService;
+
+    @PostMapping(path = "/with-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<DialogResponse> createDialogWithFiles(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @RequestParam("files") MultipartFile[] files) throws IOException {
+
+        DialogResponse response = dialogService.createDialogWithFiles(principal.getUser(), files);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping(path = "/{dialogId}/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<List<FileResponse>> addFileToDialog(
+            @PathVariable Long dialogId,
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @RequestParam("files") MultipartFile[] files) throws IOException {
+
+        List<FileResponse> response = dialogService.addFilesToDialog(dialogId, principal.getUser(), files);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping(path = "/{dialogId}/send-question")
+    public ResponseEntity<MessageResponse> sendMessageToDialog(
+            @PathVariable Long dialogId,
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @RequestBody MessageRequest messageRequest) throws IOException {
+
+        MessageResponse response = dialogService.sendQuestion(messageRequest, principal.getUser(), dialogId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+
+    @GetMapping(path = "/{dialogId}/files")
+    public ResponseEntity<List<FileResponse>> getFilesFromDialog(
+            @PathVariable Long dialogId,
+            @AuthenticationPrincipal CustomUserDetails principal) throws IOException {
+
+        List<FileResponse> response = dialogService.getFilesFromDialog(dialogId, principal.getUser());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping(path = "/{dialogId}/messages")
+    public ResponseEntity<DialogMessagesResponse> getMessagesFromDialog(
+            @PathVariable Long dialogId,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+
+        DialogMessagesResponse response = dialogService.getMessagesFromDialog(dialogId, principal.getUser());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<DialogInfo>> getAllDialogs(@AuthenticationPrincipal CustomUserDetails principal) {
+
+        List<DialogInfo> dialogs = dialogService.getAllDialogsForUser(principal.getUser());
+
+        return ResponseEntity.ok(dialogs);
+    }
+
+    @PatchMapping("/{dialogId}/change-title")
+    public ResponseEntity<DialogInfo> changeDialogTitle(
+            @PathVariable Long dialogId,
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @Valid @RequestBody ChangeDialogTitleRequest request) {
+
+        DialogInfo dialogInfo = dialogService.changeDialogTitle(dialogId, principal.getUser(), request.title());
+        return ResponseEntity.ok(dialogInfo);
+    }
+
+    @DeleteMapping("/{dialogId}")
+    public ResponseEntity<Void> deleteDialog(
+            @PathVariable Long dialogId,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+
+        dialogService.deleteDialog(dialogId, principal.getUser());
+        return ResponseEntity.noContent().build();
+
+    }
+
+}

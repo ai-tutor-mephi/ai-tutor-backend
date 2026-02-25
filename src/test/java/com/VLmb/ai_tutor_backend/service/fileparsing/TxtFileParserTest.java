@@ -1,4 +1,4 @@
-package com.VLmb.ai_tutor_backend.service.fileparsing;
+package com.VLmb.ai_tutor_backend.feature.file.fileparsing;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;

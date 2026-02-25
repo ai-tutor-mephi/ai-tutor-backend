@@ -1,7 +1,15 @@
 package com.VLmb.ai_tutor_backend.integration;
 
-import com.VLmb.ai_tutor_backend.dto.*;
-import com.VLmb.ai_tutor_backend.repository.*;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.AuthResponse;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.LoginRequest;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RegisterUserRequest;
+import com.VLmb.ai_tutor_backend.feature.auth.infra.RefreshTokenRepository;
+import com.VLmb.ai_tutor_backend.feature.auth.infra.UserRepository;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.DialogResponse;
+import com.VLmb.ai_tutor_backend.feature.dialog.infra.DialogRepository;
+import com.VLmb.ai_tutor_backend.feature.dialog.infra.MessageRepository;
+import com.VLmb.ai_tutor_backend.feature.file.application.FileResponse;
+import com.VLmb.ai_tutor_backend.feature.file.infra.FileMetadataRepository;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;

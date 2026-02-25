@@ -1,12 +1,12 @@
 package com.VLmb.ai_tutor_backend.integration;
 
-import com.VLmb.ai_tutor_backend.controller.AuthController;
-import com.VLmb.ai_tutor_backend.dto.AuthResponse;
-import com.VLmb.ai_tutor_backend.dto.LoginRequest;
-import com.VLmb.ai_tutor_backend.dto.RegisterUserRequest;
-import com.VLmb.ai_tutor_backend.dto.TokenRefreshRequest;
-import com.VLmb.ai_tutor_backend.repository.RefreshTokenRepository;
-import com.VLmb.ai_tutor_backend.repository.UserRepository;
+import com.VLmb.ai_tutor_backend.feature.auth.api.AuthController;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.AuthResponse;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.LoginRequest;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RegisterUserRequest;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.TokenRefreshRequest;
+import com.VLmb.ai_tutor_backend.feature.auth.infra.RefreshTokenRepository;
+import com.VLmb.ai_tutor_backend.feature.auth.infra.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

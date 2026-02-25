@@ -1,10 +1,15 @@
 package com.VLmb.ai_tutor_backend.integration;
 
-import com.VLmb.ai_tutor_backend.dto.*;
-import com.VLmb.ai_tutor_backend.entity.Dialog;
-import com.VLmb.ai_tutor_backend.entity.Message;
-import com.VLmb.ai_tutor_backend.repository.DialogRepository;
-import com.VLmb.ai_tutor_backend.repository.MessageRepository;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.AuthResponse;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.LoginRequest;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RegisterUserRequest;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.DialogResponse;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.MessageRequest;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.MessageResponse;
+import com.VLmb.ai_tutor_backend.feature.dialog.domain.Dialog;
+import com.VLmb.ai_tutor_backend.feature.dialog.domain.Message;
+import com.VLmb.ai_tutor_backend.feature.dialog.infra.DialogRepository;
+import com.VLmb.ai_tutor_backend.feature.dialog.infra.MessageRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -47,7 +52,7 @@ public class SendMessageToDialogIntegrationTest {
     private MessageRepository messageRepository;
 
     @MockitoSpyBean
-    private com.VLmb.ai_tutor_backend.client.RagRestClient ragRestClient;
+    private com.VLmb.ai_tutor_backend.feature.rag.infra.RagRestClient ragRestClient;
 
     @AfterEach
     void resetWireMock() {
