@@ -1,9 +1,10 @@
 package com.VLmb.ai_tutor_backend.feature.auth.application;
 
-import com.VLmb.ai_tutor_backend.feature.auth.api.dto.AuthResponse;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.LoginResponse;
 import com.VLmb.ai_tutor_backend.feature.auth.api.dto.LoginRequest;
-import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RegisterUserRequest;
-import com.VLmb.ai_tutor_backend.feature.auth.api.dto.TokenRefreshRequest;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RefreshTokenResponse;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RegisterRequest;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RefreshTokenRequest;
 import com.VLmb.ai_tutor_backend.feature.auth.domain.RefreshToken;
 import com.VLmb.ai_tutor_backend.feature.auth.domain.Role;
 import com.VLmb.ai_tutor_backend.feature.auth.domain.User;
@@ -44,7 +45,7 @@ public class AuthService {
         this.refreshTokenService = refreshTokenService;
     }
 
-    public void register(RegisterUserRequest request) throws IllegalStateException {
+    public void register(RegisterRequest request) throws IllegalStateException {
 
         if (userRepository.findByUserName(request.userName()).isPresent()) {
             throw new DuplicateResourceException("User", "userName", request.userName());
@@ -64,7 +65,7 @@ public class AuthService {
 
     }
 
-    public AuthResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request) {
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.userName(),
@@ -75,10 +76,10 @@ public class AuthService {
         UserDetails principal = (UserDetails) auth.getPrincipal();
         String access = jwtService.generateAccessToken(principal);
         RefreshToken refresh = refreshTokenService.createRefreshToken(principal.getUsername());
-        return new AuthResponse(access, refresh.getToken());
+        return new LoginResponse(access, refresh.getToken());
     }
 
-    public AuthResponse refresh(TokenRefreshRequest request) {
+    public RefreshTokenResponse refresh(RefreshTokenRequest request) {
         String requestRefreshToken = request.refreshToken();
 
         return refreshTokenService.findByToken(requestRefreshToken)
@@ -95,7 +96,7 @@ public class AuthService {
                     RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getUserName());
                     String newAccessToken = jwtService.generateAccessToken(principal);
 
-                    return new AuthResponse(newAccessToken, newRefreshToken.getToken());
+                    return new RefreshTokenResponse(newAccessToken, newRefreshToken.getToken());
                 })
                 .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
     }

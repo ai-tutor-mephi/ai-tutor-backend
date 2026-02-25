@@ -1,14 +1,14 @@
 package com.VLmb.ai_tutor_backend.integration;
 
-import com.VLmb.ai_tutor_backend.feature.auth.api.dto.AuthResponse;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.LoginResponse;
 import com.VLmb.ai_tutor_backend.feature.auth.api.dto.LoginRequest;
-import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RegisterUserRequest;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RegisterRequest;
 import com.VLmb.ai_tutor_backend.feature.auth.infra.RefreshTokenRepository;
 import com.VLmb.ai_tutor_backend.feature.auth.infra.UserRepository;
-import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.DialogResponse;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.CreateDialogResponse;
 import com.VLmb.ai_tutor_backend.feature.dialog.infra.DialogRepository;
 import com.VLmb.ai_tutor_backend.feature.dialog.infra.MessageRepository;
-import com.VLmb.ai_tutor_backend.feature.file.application.FileResponse;
+import com.VLmb.ai_tutor_backend.feature.file.application.DialogFileResponse;
 import com.VLmb.ai_tutor_backend.feature.file.infra.FileMetadataRepository;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import org.junit.jupiter.api.AfterEach;
@@ -97,13 +97,13 @@ public class DialogControllerIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        RegisterUserRequest registerRequest = new RegisterUserRequest(
+        RegisterRequest registerRequest = new RegisterRequest(
                 username,
                 email,
                 password
         );
 
-        HttpEntity<RegisterUserRequest> request = new HttpEntity<>(registerRequest, headers);
+        HttpEntity<RegisterRequest> request = new HttpEntity<>(registerRequest, headers);
 
         ResponseEntity<String> response = restTemplate.exchange(
                 AUTH_REGISTER,
@@ -119,11 +119,11 @@ public class DialogControllerIntegrationTest {
 
         HttpEntity<LoginRequest> requestForLogin = new HttpEntity<>(loginRequest, headers);
 
-        ResponseEntity<AuthResponse> loginResponse = restTemplate.exchange(
+        ResponseEntity<LoginResponse> loginResponse = restTemplate.exchange(
                 AUTH_LOGIN,
                 HttpMethod.POST,
                 requestForLogin,
-                AuthResponse.class
+                LoginResponse.class
         );
 
         assertNotNull(loginResponse.getBody());
@@ -149,11 +149,11 @@ public class DialogControllerIntegrationTest {
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
-        ResponseEntity<DialogResponse> response = restTemplate.exchange(
+        ResponseEntity<CreateDialogResponse> response = restTemplate.exchange(
                 DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 requestEntity,
-                DialogResponse.class
+                CreateDialogResponse.class
         );
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -181,11 +181,11 @@ public class DialogControllerIntegrationTest {
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
-        ResponseEntity<DialogResponse> response = restTemplate.exchange(
+        ResponseEntity<CreateDialogResponse> response = restTemplate.exchange(
                 DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 requestEntity,
-                DialogResponse.class
+                CreateDialogResponse.class
         );
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -197,11 +197,11 @@ public class DialogControllerIntegrationTest {
 
         var dialogId = response.getBody().dialogId();
 
-        ResponseEntity<List<FileResponse>> responseForUpdate = restTemplate.exchange(
+        ResponseEntity<List<DialogFileResponse>> responseForUpdate = restTemplate.exchange(
                 DIALOG_FILES.formatted(dialogId),
                 HttpMethod.POST,
                 requestEntityForUpdate,
-                new ParameterizedTypeReference<List<FileResponse>>() {}
+                new ParameterizedTypeReference<List<DialogFileResponse>>() {}
         );
 
         assertEquals(HttpStatus.CREATED, responseForUpdate.getStatusCode());
@@ -244,11 +244,11 @@ public class DialogControllerIntegrationTest {
 
         HttpEntity<MultiValueMap<String, Object>> createReq = new HttpEntity<>(body, headers);
 
-        ResponseEntity<DialogResponse> createResp = restTemplate.exchange(
+        ResponseEntity<CreateDialogResponse> createResp = restTemplate.exchange(
                 DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 createReq,
-                DialogResponse.class
+                CreateDialogResponse.class
         );
 
         assertEquals(HttpStatus.CREATED, createResp.getStatusCode());
@@ -260,11 +260,11 @@ public class DialogControllerIntegrationTest {
             setBearerAuth(accessToken);
         }});
 
-        ResponseEntity<List<FileResponse>> getResp = restTemplate.exchange(
+        ResponseEntity<List<DialogFileResponse>> getResp = restTemplate.exchange(
                 DIALOG_FILES.formatted(dialogId),
                 HttpMethod.GET,
                 getReq,
-                new ParameterizedTypeReference<List<FileResponse>>() {}
+                new ParameterizedTypeReference<List<DialogFileResponse>>() {}
         );
 
         assertEquals(HttpStatus.CREATED, getResp.getStatusCode());
@@ -290,11 +290,11 @@ public class DialogControllerIntegrationTest {
 
         HttpEntity<MultiValueMap<String, Object>> createReq = new HttpEntity<>(body, headers);
 
-        ResponseEntity<DialogResponse> createResp = restTemplate.exchange(
+        ResponseEntity<CreateDialogResponse> createResp = restTemplate.exchange(
                 DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 createReq,
-                DialogResponse.class
+                CreateDialogResponse.class
         );
 
         assertEquals(HttpStatus.CREATED, createResp.getStatusCode());
@@ -307,11 +307,11 @@ public class DialogControllerIntegrationTest {
 
         HttpEntity<Void> getReq = new HttpEntity<>(null, getHeaders);
 
-        ResponseEntity<List<DialogInfo>> listResp = restTemplate.exchange(
+        ResponseEntity<List<DialogSummaryResponse>> listResp = restTemplate.exchange(
                 DIALOGS,
                 HttpMethod.GET,
                 getReq,
-                new ParameterizedTypeReference<List<DialogInfo>>() {}
+                new ParameterizedTypeReference<List<DialogSummaryResponse>>() {}
         );
 
         assertEquals(HttpStatus.OK, listResp.getStatusCode());
@@ -337,11 +337,11 @@ public class DialogControllerIntegrationTest {
 
         HttpEntity<MultiValueMap<String, Object>> createReq = new HttpEntity<>(body, headers);
 
-        ResponseEntity<DialogResponse> createResp = restTemplate.exchange(
+        ResponseEntity<CreateDialogResponse> createResp = restTemplate.exchange(
                 DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 createReq,
-                DialogResponse.class
+                CreateDialogResponse.class
         );
 
         assertEquals(HttpStatus.CREATED, createResp.getStatusCode());
@@ -354,11 +354,11 @@ public class DialogControllerIntegrationTest {
         ChangeDialogTitleRequest changeRequest = new ChangeDialogTitleRequest("Updated title");
         HttpEntity<ChangeDialogTitleRequest> patchReq = new HttpEntity<>(changeRequest, patchHeaders);
 
-        ResponseEntity<DialogInfo> patchResp = restTemplate.exchange(
+        ResponseEntity<DialogSummaryResponse> patchResp = restTemplate.exchange(
                 DIALOG_CHANGE_TITLE.formatted(dialogId),
                 HttpMethod.PATCH,
                 patchReq,
-                DialogInfo.class
+                DialogSummaryResponse.class
         );
 
         assertEquals(HttpStatus.OK, patchResp.getStatusCode());
@@ -383,11 +383,11 @@ public class DialogControllerIntegrationTest {
 
         HttpEntity<MultiValueMap<String, Object>> createReq = new HttpEntity<>(body, headers);
 
-        ResponseEntity<DialogResponse> createResp = restTemplate.exchange(
+        ResponseEntity<CreateDialogResponse> createResp = restTemplate.exchange(
                 DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 createReq,
-                DialogResponse.class
+                CreateDialogResponse.class
         );
 
         assertEquals(HttpStatus.CREATED, createResp.getStatusCode());
@@ -426,11 +426,11 @@ public class DialogControllerIntegrationTest {
 
         HttpEntity<MultiValueMap<String, Object>> createReq = new HttpEntity<>(body, headers);
 
-        ResponseEntity<DialogResponse> createResp = restTemplate.exchange(
+        ResponseEntity<CreateDialogResponse> createResp = restTemplate.exchange(
                 DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 createReq,
-                DialogResponse.class
+                CreateDialogResponse.class
         );
 
         assertEquals(HttpStatus.CREATED, createResp.getStatusCode());
@@ -454,11 +454,11 @@ public class DialogControllerIntegrationTest {
 
         HttpEntity<Void> listReq = new HttpEntity<>(null, delHeaders);
 
-        ResponseEntity<List<DialogInfo>> listResp = restTemplate.exchange(
+        ResponseEntity<List<DialogSummaryResponse>> listResp = restTemplate.exchange(
                 DIALOGS,
                 HttpMethod.GET,
                 listReq,
-                new ParameterizedTypeReference<List<DialogInfo>>() {}
+                new ParameterizedTypeReference<List<DialogSummaryResponse>>() {}
         );
 
         assertEquals(HttpStatus.OK, listResp.getStatusCode());

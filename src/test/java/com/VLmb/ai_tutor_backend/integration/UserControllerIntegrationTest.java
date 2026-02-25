@@ -1,8 +1,8 @@
 package com.VLmb.ai_tutor_backend.integration;
 
-import com.VLmb.ai_tutor_backend.feature.auth.api.dto.AuthResponse;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.LoginResponse;
 import com.VLmb.ai_tutor_backend.feature.auth.api.dto.LoginRequest;
-import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RegisterUserRequest;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RegisterRequest;
 import com.VLmb.ai_tutor_backend.feature.auth.infra.RefreshTokenRepository;
 import com.VLmb.ai_tutor_backend.feature.auth.infra.UserRepository;
 import com.VLmb.ai_tutor_backend.feature.user.api.dto.ChangeUsernameRequest;
@@ -89,13 +89,13 @@ public class UserControllerIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        RegisterUserRequest registerRequest = new RegisterUserRequest(
+        RegisterRequest registerRequest = new RegisterRequest(
                 username,
                 email,
                 password
         );
 
-        HttpEntity<RegisterUserRequest> request = new HttpEntity<>(registerRequest, headers);
+        HttpEntity<RegisterRequest> request = new HttpEntity<>(registerRequest, headers);
 
         restTemplate.exchange(
                 AUTH_REGISTER,
@@ -111,11 +111,11 @@ public class UserControllerIntegrationTest {
 
         HttpEntity<LoginRequest> requestForLogin = new HttpEntity<>(loginRequest, headers);
 
-        ResponseEntity<AuthResponse> loginResponse = restTemplate.exchange(
+        ResponseEntity<LoginResponse> loginResponse = restTemplate.exchange(
                 AUTH_LOGIN,
                 HttpMethod.POST,
                 requestForLogin,
-                AuthResponse.class
+                LoginResponse.class
         );
 
         assertNotNull(loginResponse.getBody());

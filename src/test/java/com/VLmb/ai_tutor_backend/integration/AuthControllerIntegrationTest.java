@@ -1,10 +1,11 @@
 package com.VLmb.ai_tutor_backend.integration;
 
 import com.VLmb.ai_tutor_backend.feature.auth.api.AuthController;
-import com.VLmb.ai_tutor_backend.feature.auth.api.dto.AuthResponse;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.LoginResponse;
 import com.VLmb.ai_tutor_backend.feature.auth.api.dto.LoginRequest;
-import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RegisterUserRequest;
-import com.VLmb.ai_tutor_backend.feature.auth.api.dto.TokenRefreshRequest;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RefreshTokenResponse;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RegisterRequest;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RefreshTokenRequest;
 import com.VLmb.ai_tutor_backend.feature.auth.infra.RefreshTokenRepository;
 import com.VLmb.ai_tutor_backend.feature.auth.infra.UserRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -43,13 +44,13 @@ public class AuthControllerIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        RegisterUserRequest registerRequest = new RegisterUserRequest(
+        RegisterRequest registerRequest = new RegisterRequest(
                 "testUserName",
                 "test@email.com",
                 "testPassword"
         );
 
-        HttpEntity<RegisterUserRequest> request = new HttpEntity<>(registerRequest, headers);
+        HttpEntity<RegisterRequest> request = new HttpEntity<>(registerRequest, headers);
 
         ResponseEntity<String> response = restTemplate.exchange(
                 AUTH_REGISTER,
@@ -76,11 +77,11 @@ public class AuthControllerIntegrationTest {
 
         HttpEntity<LoginRequest> request = new HttpEntity<>(loginRequest, headers);
 
-        ResponseEntity<AuthResponse> response = restTemplate.exchange(
+        ResponseEntity<LoginResponse> response = restTemplate.exchange(
                 AUTH_LOGIN,
                 HttpMethod.POST,
                 request,
-                AuthResponse.class
+                LoginResponse.class
         );
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -105,26 +106,26 @@ public class AuthControllerIntegrationTest {
 
         HttpEntity<LoginRequest> requestForLogin = new HttpEntity<>(loginRequest, headers);
 
-        ResponseEntity<AuthResponse> loginResponse = restTemplate.exchange(
+        ResponseEntity<LoginResponse> loginResponse = restTemplate.exchange(
                 AUTH_LOGIN,
                 HttpMethod.POST,
                 requestForLogin,
-                AuthResponse.class
+                LoginResponse.class
         );
 
         assertNotNull(loginResponse.getBody());
         String accessToken = loginResponse.getBody().accessToken();
         String refreshToken = loginResponse.getBody().refreshToken();
 
-        var refreshRequest = new TokenRefreshRequest(refreshToken);
+        var refreshRequest = new RefreshTokenRequest(refreshToken);
 
-        HttpEntity<TokenRefreshRequest> request = new HttpEntity<>(refreshRequest, headers);
+        HttpEntity<RefreshTokenRequest> request = new HttpEntity<>(refreshRequest, headers);
 
-        ResponseEntity<AuthResponse> response = restTemplate.exchange(
+        ResponseEntity<RefreshTokenResponse> response = restTemplate.exchange(
                 AUTH_REFRESH,
                 HttpMethod.POST,
                 request,
-                AuthResponse.class
+                RefreshTokenResponse.class
         );
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -137,13 +138,13 @@ public class AuthControllerIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        RegisterUserRequest registerRequest = new RegisterUserRequest(
+        RegisterRequest registerRequest = new RegisterRequest(
                 username,
                 email,
                 password
         );
 
-        HttpEntity<RegisterUserRequest> request = new HttpEntity<>(registerRequest, headers);
+        HttpEntity<RegisterRequest> request = new HttpEntity<>(registerRequest, headers);
 
         ResponseEntity<String> response = restTemplate.exchange(
                 AUTH_REGISTER,

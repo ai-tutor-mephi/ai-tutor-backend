@@ -1,17 +1,17 @@
 package com.VLmb.ai_tutor_backend.feature.dialog.application;
 
 import com.VLmb.ai_tutor_backend.feature.auth.domain.User;
-import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.DialogInfo;
-import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.DialogMessagesDto;
-import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.DialogMessagesResponse;
-import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.DialogResponse;
-import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.MessageRequest;
-import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.MessageResponse;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.DialogSummaryResponse;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.DialogMessageResponse;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.GetDialogMessagesResponse;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.CreateDialogResponse;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.SendMessageRequest;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.SendMessageResponse;
 import com.VLmb.ai_tutor_backend.feature.dialog.domain.Dialog;
 import com.VLmb.ai_tutor_backend.feature.dialog.domain.Message;
 import com.VLmb.ai_tutor_backend.feature.dialog.infra.DialogRepository;
 import com.VLmb.ai_tutor_backend.feature.dialog.infra.MessageRepository;
-import com.VLmb.ai_tutor_backend.feature.file.application.FileResponse;
+import com.VLmb.ai_tutor_backend.feature.file.application.DialogFileResponse;
 import com.VLmb.ai_tutor_backend.feature.file.application.FileStorageService;
 import com.VLmb.ai_tutor_backend.feature.file.domain.FileMetadata;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.FileUploadException;
@@ -19,7 +19,7 @@ import com.VLmb.ai_tutor_backend.shared.error.exceptions.ResourceNotFoundExcepti
 import com.VLmb.ai_tutor_backend.feature.file.infra.FileMetadataRepository;
 import com.VLmb.ai_tutor_backend.feature.file.fileparsing.ExtensionsEnum;
 import com.VLmb.ai_tutor_backend.feature.file.fileparsing.FileParserFactory;
-import com.VLmb.ai_tutor_backend.feature.rag.api.dto.FileInf;
+import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagFileRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.application.RagCommunicationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -52,7 +52,7 @@ public class DialogService {
     private final RagCommunicationService ragCommunicationService;
 
     @Transactional
-    public DialogResponse createDialogWithFiles(User user, MultipartFile[] files) throws IOException {
+    public CreateDialogResponse createDialogWithFiles(User user, MultipartFile[] files) throws IOException {
         if (files == null || files.length == 0) {
             throw new IllegalArgumentException("At least one file must be provided.");
         }
@@ -70,11 +70,11 @@ public class DialogService {
             }
         }
 
-        return new DialogResponse(savedDialog.getId(), savedDialog.getTitle());
+        return new CreateDialogResponse(savedDialog.getId(), savedDialog.getTitle());
     }
 
     @Transactional
-    public List<FileResponse> addFilesToDialog(Long dialogId, User currentUser, MultipartFile[] files) throws IOException {
+    public List<DialogFileResponse> addFilesToDialog(Long dialogId, User currentUser, MultipartFile[] files) throws IOException {
         if (files == null || files.length == 0) {
             throw new IllegalArgumentException("At least one file must be provided.");
         }
@@ -82,7 +82,7 @@ public class DialogService {
         Dialog dialog = getDialog(dialogId);
         assertDialogOwner(dialog, currentUser);
 
-        List<FileResponse> storedFiles = new ArrayList<>();
+        List<DialogFileResponse> storedFiles = new ArrayList<>();
         for (MultipartFile file : files) {
             try {
                 FileMetadata savedFile = addFileToDialog(dialog, file);
@@ -126,7 +126,7 @@ public class DialogService {
         if (text == null || text.isBlank()) {
             return;
         }
-        FileInf fileInf = new FileInf(metadata.getId().toString(), metadata.getOriginalFileName(), text);
+        RagFileRequest fileInf = new RagFileRequest(metadata.getId().toString(), metadata.getOriginalFileName(), text);
         ragCommunicationService.loadFileToRag(dialogId, List.of(fileInf));
     }
 
@@ -146,14 +146,14 @@ public class DialogService {
     }
 
     @Transactional(readOnly = true)
-    public List<FileResponse> getFilesFromDialog(Long dialogId, User currentUser) throws IOException {
+    public List<DialogFileResponse> getFilesFromDialog(Long dialogId, User currentUser) throws IOException {
         Dialog dialog = getDialog(dialogId);
         assertDialogOwner(dialog, currentUser);
 
         List<FileMetadata> files = dialog.getFiles();
 
         return files.stream()
-                .map(file -> new FileResponse(
+                .map(file -> new DialogFileResponse(
                         file.getId(),
                         file.getOriginalFileName(),
                         dialog.getId()))
@@ -161,7 +161,7 @@ public class DialogService {
     }
 
     @Transactional(readOnly = true)
-    public DialogMessagesResponse getMessagesFromDialog(Long dialogId, User currentUser) {
+    public GetDialogMessagesResponse getMessagesFromDialog(Long dialogId, User currentUser) {
         Dialog dialog = dialogRepository.findById(dialogId)
                 .orElseThrow(() -> new ResourceNotFoundException("Dialog", "id", dialogId));
 
@@ -169,32 +169,32 @@ public class DialogService {
             throw new SecurityException("User does not have permission to access this dialog");
         }
 
-        List<DialogMessagesDto> messages = messageRepository.findByDialogIdOrderByCreatedAt(dialogId)
+        List<DialogMessageResponse> messages = messageRepository.findByDialogIdOrderByCreatedAt(dialogId)
                 .stream()
-                .map(message -> new DialogMessagesDto(message.getContent(), message.getRole()))
+                .map(message -> new DialogMessageResponse(message.getContent(), message.getRole()))
                 .collect(Collectors.toList());
 
-        return new DialogMessagesResponse(dialog.getId(), messages);
+        return new GetDialogMessagesResponse(dialog.getId(), messages);
     }
 
     @Transactional(readOnly = true)
-    public List<DialogInfo> getAllDialogsForUser(User currentUser) {
+    public List<DialogSummaryResponse> getAllDialogsForUser(User currentUser) {
 
         return dialogRepository.findByOwnerIdOrderByCreatedAtDesc(currentUser.getId())
                 .stream()
-                .map(dialog -> new DialogInfo(dialog.getId(), dialog.getTitle(), dialog.getCreatedAt()))
+                .map(dialog -> new DialogSummaryResponse(dialog.getId(), dialog.getTitle(), dialog.getCreatedAt()))
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public MessageResponse sendQuestion(MessageRequest messageRequest, User currentUser, Long dialogId) throws IOException {
+    public SendMessageResponse sendQuestion(SendMessageRequest messageRequest, User currentUser, Long dialogId) throws IOException {
 
         Message question = new Message();
         question.setRole(Message.MessageRole.USER);
         question.setDialog(getDialog(dialogId));
         question.setContent(messageRequest.question());
 
-        MessageResponse messageResponse = ragCommunicationService.sendQuestionToRag(dialogId, question);
+        SendMessageResponse messageResponse = ragCommunicationService.sendQuestionToRag(dialogId, question);
 
         messageRepository.save(question);
 
@@ -222,12 +222,12 @@ public class DialogService {
     }
 
     @Transactional
-    public DialogInfo changeDialogTitle(Long dialogId, User currentUser, String newTitle) {
+    public DialogSummaryResponse changeDialogTitle(Long dialogId, User currentUser, String newTitle) {
         Dialog dialog = getDialog(dialogId);
         assertDialogOwner(dialog, currentUser);
         dialog.setTitle(newTitle);
         Dialog saved = dialogRepository.save(dialog);
-        return new DialogInfo(saved.getId(), saved.getTitle(), saved.getCreatedAt());
+        return new DialogSummaryResponse(saved.getId(), saved.getTitle(), saved.getCreatedAt());
     }
 
     private Dialog getDialog(Long dialogId) {
@@ -241,7 +241,7 @@ public class DialogService {
         }
     }
 
-    private FileResponse toFileResponse(FileMetadata file, Long dialogId) {
-        return new FileResponse(file.getId(), file.getOriginalFileName(), dialogId);
+    private DialogFileResponse toFileResponse(FileMetadata file, Long dialogId) {
+        return new DialogFileResponse(file.getId(), file.getOriginalFileName(), dialogId);
     }
 }

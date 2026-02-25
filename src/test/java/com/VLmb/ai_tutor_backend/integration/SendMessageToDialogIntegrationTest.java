@@ -1,11 +1,11 @@
 package com.VLmb.ai_tutor_backend.integration;
 
-import com.VLmb.ai_tutor_backend.feature.auth.api.dto.AuthResponse;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.LoginResponse;
 import com.VLmb.ai_tutor_backend.feature.auth.api.dto.LoginRequest;
-import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RegisterUserRequest;
-import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.DialogResponse;
-import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.MessageRequest;
-import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.MessageResponse;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RegisterRequest;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.CreateDialogResponse;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.SendMessageRequest;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.SendMessageResponse;
 import com.VLmb.ai_tutor_backend.feature.dialog.domain.Dialog;
 import com.VLmb.ai_tutor_backend.feature.dialog.domain.Message;
 import com.VLmb.ai_tutor_backend.feature.dialog.infra.DialogRepository;
@@ -89,11 +89,11 @@ public class SendMessageToDialogIntegrationTest {
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
-        ResponseEntity<DialogResponse> response = restTemplate.exchange(
+        ResponseEntity<CreateDialogResponse> response = restTemplate.exchange(
                 DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 requestEntity,
-                DialogResponse.class
+                CreateDialogResponse.class
         );
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -102,14 +102,14 @@ public class SendMessageToDialogIntegrationTest {
         assertNotNull(response.getBody().title());
 
         headers.setContentType(MediaType.APPLICATION_JSON);
-        MessageRequest messageRequest = new MessageRequest("Is Java the best language for backend development?");
-        HttpEntity<MessageRequest> requestEntityForRag = new HttpEntity<>(messageRequest, headers);
+        SendMessageRequest messageRequest = new SendMessageRequest("Is Java the best language for backend development?");
+        HttpEntity<SendMessageRequest> requestEntityForRag = new HttpEntity<>(messageRequest, headers);
 
-        ResponseEntity<MessageResponse> answer = restTemplate.exchange(
+        ResponseEntity<SendMessageResponse> answer = restTemplate.exchange(
                 DIALOG_SEND_QUESTION.formatted(response.getBody().dialogId()),
                 HttpMethod.POST,
                 requestEntityForRag,
-                MessageResponse.class
+                SendMessageResponse.class
         );
 
         assertEquals(HttpStatus.OK, answer.getStatusCode());
@@ -137,11 +137,11 @@ public class SendMessageToDialogIntegrationTest {
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
-        ResponseEntity<DialogResponse> dialogResponse = restTemplate.exchange(
+        ResponseEntity<CreateDialogResponse> dialogResponse = restTemplate.exchange(
                 DIALOGS_WITH_FILES,
                 HttpMethod.POST,
                 requestEntity,
-                DialogResponse.class
+                CreateDialogResponse.class
         );
 
         assertEquals(HttpStatus.CREATED, dialogResponse.getStatusCode());
@@ -167,14 +167,14 @@ public class SendMessageToDialogIntegrationTest {
         mockRagServiceAnswer("Second answer from RAG");
 
         headers.setContentType(MediaType.APPLICATION_JSON);
-        MessageRequest messageRequest = new MessageRequest("Second question?");
-        HttpEntity<MessageRequest> requestEntityForSend = new HttpEntity<>(messageRequest, headers);
+        SendMessageRequest messageRequest = new SendMessageRequest("Second question?");
+        HttpEntity<SendMessageRequest> requestEntityForSend = new HttpEntity<>(messageRequest, headers);
 
-        ResponseEntity<MessageResponse> response = restTemplate.exchange(
+        ResponseEntity<SendMessageResponse> response = restTemplate.exchange(
                 DIALOG_SEND_QUESTION.formatted(dialogId),
                 HttpMethod.POST,
                 requestEntityForSend,
-                MessageResponse.class
+                SendMessageResponse.class
         );
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -191,13 +191,13 @@ public class SendMessageToDialogIntegrationTest {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
 
-        RegisterUserRequest registerRequest = new RegisterUserRequest(
+        RegisterRequest registerRequest = new RegisterRequest(
                 username,
                 email,
                 password
         );
 
-        HttpEntity<RegisterUserRequest> request = new HttpEntity<>(registerRequest, headers);
+        HttpEntity<RegisterRequest> request = new HttpEntity<>(registerRequest, headers);
 
         ResponseEntity<String> response = restTemplate.exchange(
                 AUTH_REGISTER,
@@ -213,11 +213,11 @@ public class SendMessageToDialogIntegrationTest {
 
         HttpEntity<LoginRequest> requestForLogin = new HttpEntity<>(loginRequest, headers);
 
-        ResponseEntity<AuthResponse> loginResponse = restTemplate.exchange(
+        ResponseEntity<LoginResponse> loginResponse = restTemplate.exchange(
                 AUTH_LOGIN,
                 HttpMethod.POST,
                 requestForLogin,
-                AuthResponse.class
+                LoginResponse.class
         );
 
         assertNotNull(loginResponse.getBody());
@@ -227,7 +227,7 @@ public class SendMessageToDialogIntegrationTest {
     }
 
     private void mockRagServiceAnswer(String answer) {
-        Mockito.doReturn(new MessageResponse(answer))
+        Mockito.doReturn(new SendMessageResponse(answer))
                 .when(ragRestClient)
                 .sendMessage(Mockito.any());
     }

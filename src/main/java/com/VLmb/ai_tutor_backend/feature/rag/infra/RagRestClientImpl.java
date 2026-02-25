@@ -1,9 +1,9 @@
 package com.VLmb.ai_tutor_backend.feature.rag.infra;
 
-import com.VLmb.ai_tutor_backend.feature.rag.api.dto.FileInf;
-import com.VLmb.ai_tutor_backend.feature.rag.api.dto.LoadFileToRagDto;
-import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.MessageRequestDto;
-import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.MessageResponse;
+import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagFileRequest;
+import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagLoadFilesRequest;
+import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQueryRequest;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.SendMessageResponse;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,7 +22,7 @@ public class RagRestClientImpl implements RagRestClient {
     }
 
     @Override
-    public MessageResponse sendMessage(MessageRequestDto ragRequest) {
+    public SendMessageResponse sendMessage(RagQueryRequest ragRequest) {
 
         return client.post()
                 .uri(SEND_MESSAGE_PATH)
@@ -30,14 +30,14 @@ public class RagRestClientImpl implements RagRestClient {
                 .accept(MediaType.APPLICATION_JSON)
                 .body(ragRequest)
                 .retrieve()
-                .body(MessageResponse.class);
+                .body(SendMessageResponse.class);
     }
 
     // TODO: Add retries and richer error handling for RAG file upload if needed.
     @Override
-    public void loadFile(LoadFileToRagDto request) {
+    public void loadFile(RagLoadFilesRequest request) {
         if (request.content() != null) {
-            for (FileInf file : request.content()) {
+            for (RagFileRequest file : request.content()) {
                 log.info("Sending file to RAG: fileId={}, fileName={}, content={}", file.fileId(), file.fileName(), file.text());
             }
         } else {

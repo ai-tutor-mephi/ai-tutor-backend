@@ -2,8 +2,8 @@ package com.VLmb.ai_tutor_backend.feature.dialog.api.dto;
 
 import java.util.List;
 
-public record DialogMessagesResponse(
+public record GetDialogMessagesResponse(
         Long dialogId,
-        List<DialogMessagesDto> dialogMessages
+        List<DialogMessageResponse> dialogMessages
 ) {
 }

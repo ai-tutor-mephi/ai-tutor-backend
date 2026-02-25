@@ -1,9 +1,10 @@
 package com.VLmb.ai_tutor_backend.feature.auth.api;
 
-import com.VLmb.ai_tutor_backend.feature.auth.api.dto.AuthResponse;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.LoginResponse;
 import com.VLmb.ai_tutor_backend.feature.auth.api.dto.LoginRequest;
-import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RegisterUserRequest;
-import com.VLmb.ai_tutor_backend.feature.auth.api.dto.TokenRefreshRequest;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RefreshTokenResponse;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RegisterRequest;
+import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RefreshTokenRequest;
 import com.VLmb.ai_tutor_backend.feature.auth.application.AuthService;
 import com.VLmb.ai_tutor_backend.feature.auth.application.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -24,20 +25,20 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@Valid @RequestBody RegisterUserRequest request) {
+    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
         service.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully");
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-        AuthResponse response = service.login(loginRequest);
+    public ResponseEntity<LoginResponse> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+        LoginResponse response = service.login(loginRequest);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponse> refreshToken(@Valid @RequestBody TokenRefreshRequest request) {
-        AuthResponse response = service.refresh(request);
+    public ResponseEntity<RefreshTokenResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        RefreshTokenResponse response = service.refresh(request);
         return ResponseEntity.ok(response);
     }
 

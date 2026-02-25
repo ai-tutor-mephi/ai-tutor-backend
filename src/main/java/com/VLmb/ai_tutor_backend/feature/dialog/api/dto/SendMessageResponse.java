@@ -1,3 +1,3 @@
 package com.VLmb.ai_tutor_backend.feature.dialog.api.dto;
 
-public record MessageResponse(String answer) {}
+public record SendMessageResponse(String answer) {}

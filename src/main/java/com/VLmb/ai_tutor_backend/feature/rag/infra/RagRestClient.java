@@ -1,10 +1,10 @@
 package com.VLmb.ai_tutor_backend.feature.rag.infra;
 
-import com.VLmb.ai_tutor_backend.feature.rag.api.dto.LoadFileToRagDto;
-import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.MessageResponse;
-import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.MessageRequestDto;
+import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagLoadFilesRequest;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.SendMessageResponse;
+import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQueryRequest;
 
 public interface RagRestClient {
-    MessageResponse sendMessage(MessageRequestDto ragRequest);
-    void loadFile(LoadFileToRagDto request);
+    SendMessageResponse sendMessage(RagQueryRequest ragRequest);
+    void loadFile(RagLoadFilesRequest request);
 }
