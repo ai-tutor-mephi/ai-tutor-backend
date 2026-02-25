@@ -20,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/dialogs")
@@ -50,14 +51,13 @@ public class DialogController {
     }
 
     @PostMapping(path = "/{dialogId}/send-question")
-    public ResponseEntity<SendMessageResponse> sendMessageToDialog(
+    public CompletableFuture<ResponseEntity<SendMessageResponse>> sendMessageToDialog(
             @PathVariable Long dialogId,
             @AuthenticationPrincipal CustomUserDetails principal,
-            @RequestBody SendMessageRequest messageRequest) throws IOException {
+            @RequestBody SendMessageRequest messageRequest) {
 
-        SendMessageResponse response = dialogService.sendQuestion(messageRequest, principal.getUser(), dialogId);
-
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+        return dialogService.sendQuestionAsync(messageRequest, principal.getUser(), dialogId)
+                .thenApply(response -> ResponseEntity.status(HttpStatus.OK).body(response));
     }
 
 

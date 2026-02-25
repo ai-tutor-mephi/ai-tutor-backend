@@ -4,21 +4,25 @@ import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagFileRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagLoadFilesRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQueryRequest;
 import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.SendMessageResponse;
-
 import lombok.extern.slf4j.Slf4j;
-
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
+
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 public class RagRestClientImpl implements RagRestClient {
 
     private final RestClient client;
+    private final TaskExecutor ragExecutor;
     private static final String SEND_MESSAGE_PATH = "/query";
     private static final String LOAD_FILES_PATH = "/load";
 
-    public RagRestClientImpl(RestClient ragRestClient) {
+    public RagRestClientImpl(RestClient ragRestClient, @Qualifier("ragExecutor") TaskExecutor ragExecutor) {
         this.client = ragRestClient;
+        this.ragExecutor = ragExecutor;
     }
 
     @Override
@@ -31,6 +35,11 @@ public class RagRestClientImpl implements RagRestClient {
                 .body(ragRequest)
                 .retrieve()
                 .body(SendMessageResponse.class);
+    }
+
+    @Override
+    public CompletableFuture<SendMessageResponse> sendMessageAsync(RagQueryRequest ragRequest) {
+        return CompletableFuture.supplyAsync(() -> sendMessage(ragRequest), ragExecutor);
     }
 
     // TODO: Add retries and richer error handling for RAG file upload if needed.

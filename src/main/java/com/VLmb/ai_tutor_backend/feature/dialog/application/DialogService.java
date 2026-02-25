@@ -22,6 +22,8 @@ import com.VLmb.ai_tutor_backend.feature.file.fileparsing.FileParserFactory;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagFileRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.application.RagCommunicationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,6 +35,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,6 +53,8 @@ public class DialogService {
     private final FileStorageService fileStorageService;
     private final MessageRepository messageRepository;
     private final RagCommunicationService ragCommunicationService;
+    @Qualifier("dbExecutor")
+    private final TaskExecutor dbExecutor;
 
     @Transactional
     public CreateDialogResponse createDialogWithFiles(User user, MultipartFile[] files) throws IOException {
@@ -207,6 +212,35 @@ public class DialogService {
         }
 
         return messageResponse;
+    }
+
+    public CompletableFuture<SendMessageResponse> sendQuestionAsync(
+            SendMessageRequest messageRequest,
+            User currentUser,
+            Long dialogId
+    ) {
+        Dialog dialog = getDialog(dialogId);
+        assertDialogOwner(dialog, currentUser);
+
+        Message question = new Message();
+        question.setRole(Message.MessageRole.USER);
+        question.setDialog(dialog);
+        question.setContent(messageRequest.question());
+
+        return ragCommunicationService.sendQuestionToRagAsync(dialogId, question)
+                .thenApplyAsync(messageResponse -> {
+                    messageRepository.save(question);
+
+                    if (messageResponse.answer() != null) {
+                        Message answer = new Message();
+                        answer.setRole(Message.MessageRole.BOT);
+                        answer.setDialog(dialog);
+                        answer.setContent(messageResponse.answer());
+                        messageRepository.save(answer);
+                    }
+
+                    return messageResponse;
+                }, dbExecutor);
     }
 
     public void deleteDialog(Long dialogId, User currentUser) {
