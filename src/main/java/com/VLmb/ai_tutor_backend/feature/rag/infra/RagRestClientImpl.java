@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class RagRestClientImpl implements RagRestClient {
@@ -60,5 +61,11 @@ public class RagRestClientImpl implements RagRestClient {
                 .body(request)
                 .retrieve()
                 .toBodilessEntity();
+    }
+
+    @Override
+    public CompletableFuture<Void> loadFileAsync(RagLoadFilesRequest request) {
+        return CompletableFuture.runAsync(() -> loadFile(request), ragExecutor)
+                .orTimeout(15, TimeUnit.SECONDS);
     }
 }

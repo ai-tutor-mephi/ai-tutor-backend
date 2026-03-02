@@ -30,24 +30,22 @@ public class DialogController {
     private final DialogService dialogService;
 
     @PostMapping(path = "/with-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<CreateDialogResponse> createDialogWithFiles(
+    public CompletableFuture<ResponseEntity<CreateDialogResponse>> createDialogWithFiles(
             @AuthenticationPrincipal CustomUserDetails principal,
-            @RequestParam("files") MultipartFile[] files) throws IOException {
+            @RequestParam("files") MultipartFile[] files) {
 
-        CreateDialogResponse response = dialogService.createDialogWithFiles(principal.getUser(), files);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return dialogService.createDialogWithFilesAsync(principal.getUser(), files)
+                .thenApply(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 
     @PostMapping(path = "/{dialogId}/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<List<DialogFileResponse>> addFileToDialog(
+    public CompletableFuture<ResponseEntity<List<DialogFileResponse>>> addFileToDialog(
             @PathVariable Long dialogId,
             @AuthenticationPrincipal CustomUserDetails principal,
-            @RequestParam("files") MultipartFile[] files) throws IOException {
+            @RequestParam("files") MultipartFile[] files) {
 
-        List<DialogFileResponse> response = dialogService.addFilesToDialog(dialogId, principal.getUser(), files);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return dialogService.addFilesToDialogAsync(dialogId, principal.getUser(), files)
+                .thenApply(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 
     @PostMapping(path = "/{dialogId}/send-question")

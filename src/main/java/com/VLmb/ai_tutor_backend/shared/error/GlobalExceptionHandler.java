@@ -4,7 +4,9 @@ import com.VLmb.ai_tutor_backend.shared.error.ErrorResponse;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.DuplicateResourceException;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.FileUploadException;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.ResourceNotFoundException;
+import com.VLmb.ai_tutor_backend.shared.error.exceptions.TextExtractionException;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.TokenRefreshException;
+import com.VLmb.ai_tutor_backend.shared.error.exceptions.UnsupportedFileExtension;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,6 +46,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(FileUploadException.class)
     public ResponseEntity<ErrorResponse> handleFileUploadException(FileUploadException ex, HttpServletRequest request) {
         return createErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(TextExtractionException.class)
+    public ResponseEntity<ErrorResponse> handleTextExtractionException(TextExtractionException ex, HttpServletRequest request) {
+        return createErrorResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(UnsupportedFileExtension.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedFileExtension(UnsupportedFileExtension ex, HttpServletRequest request) {
+        return createErrorResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request.getRequestURI());
     }
 
 }

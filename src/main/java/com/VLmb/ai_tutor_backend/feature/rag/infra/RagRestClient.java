@@ -10,4 +10,5 @@ public interface RagRestClient {
     SendMessageResponse sendMessage(RagQueryRequest ragRequest);
     CompletableFuture<SendMessageResponse> sendMessageAsync(RagQueryRequest ragRequest);
     void loadFile(RagLoadFilesRequest request);
+    CompletableFuture<Void> loadFileAsync(RagLoadFilesRequest request);
 }

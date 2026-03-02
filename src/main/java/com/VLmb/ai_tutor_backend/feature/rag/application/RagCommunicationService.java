@@ -60,4 +60,13 @@ public class RagCommunicationService {
         ragRestClient.loadFile(request);
     }
 
+    public CompletableFuture<Void> loadFileToRagAsync(Long dialogId, List<RagFileRequest> files) {
+        RagLoadFilesRequest request = new RagLoadFilesRequest(
+                files,
+                dialogId.toString()
+        );
+
+        return ragRestClient.loadFileAsync(request);
+    }
+
 }

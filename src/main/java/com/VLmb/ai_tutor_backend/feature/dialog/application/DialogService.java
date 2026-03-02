@@ -21,6 +21,8 @@ import com.VLmb.ai_tutor_backend.feature.file.fileparsing.ExtensionsEnum;
 import com.VLmb.ai_tutor_backend.feature.file.fileparsing.FileParserFactory;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagFileRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.application.RagCommunicationService;
+import com.VLmb.ai_tutor_backend.shared.error.exceptions.TextExtractionException;
+import com.VLmb.ai_tutor_backend.shared.error.exceptions.UnsupportedFileExtension;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
@@ -32,10 +34,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 
 @Service
@@ -67,15 +69,42 @@ public class DialogService {
         dialog.setTitle(files[0].getOriginalFilename());
         Dialog savedDialog = dialogRepository.save(dialog);
 
-        for (MultipartFile file : files) {
-            try {
+        try {
+            for (MultipartFile file : files) {
                 addFileToDialog(savedDialog, file);
-            } catch (IOException e) {
-                throw new FileUploadException("Failed to upload file: " + file.getOriginalFilename(), e);
             }
+        } catch (RuntimeException | IOException ex) {
+            cleanupDialogArtifacts(savedDialog);
+            throw ex instanceof RuntimeException runtimeException
+                    ? runtimeException
+                    : new FileUploadException("Failed to upload files for dialog creation", ex);
         }
 
         return new CreateDialogResponse(savedDialog.getId(), savedDialog.getTitle());
+    }
+
+    public CompletableFuture<CreateDialogResponse> createDialogWithFilesAsync(User user, MultipartFile[] files) {
+        if (files == null || files.length == 0) {
+            throw new IllegalArgumentException("At least one file must be provided.");
+        }
+
+        Dialog dialog = new Dialog();
+        dialog.setOwner(user);
+        dialog.setTitle(files[0].getOriginalFilename());
+        Dialog savedDialog = dialogRepository.save(dialog);
+
+        try {
+            return addFilesToDialogAsync(savedDialog.getId(), user, files)
+                    .thenApply(unused -> new CreateDialogResponse(savedDialog.getId(), savedDialog.getTitle()))
+                    .whenComplete((unused, ex) -> {
+                        if (ex != null) {
+                            cleanupDialogArtifacts(savedDialog);
+                        }
+                    });
+        } catch (RuntimeException ex) {
+            cleanupDialogArtifacts(savedDialog);
+            throw ex;
+        }
     }
 
     @Transactional
@@ -88,51 +117,97 @@ public class DialogService {
         assertDialogOwner(dialog, currentUser);
 
         List<DialogFileResponse> storedFiles = new ArrayList<>();
-        for (MultipartFile file : files) {
-            try {
+        List<FileMetadata> uploadedFiles = new ArrayList<>();
+        try {
+            for (MultipartFile file : files) {
                 FileMetadata savedFile = addFileToDialog(dialog, file);
+                uploadedFiles.add(savedFile);
                 storedFiles.add(toFileResponse(savedFile, dialog.getId()));
-            } catch (IOException e) {
-                throw new FileUploadException("Failed to upload file: " + file.getOriginalFilename(), e);
             }
+        } catch (RuntimeException | IOException ex) {
+            cleanupFiles(uploadedFiles);
+            throw ex instanceof RuntimeException runtimeException
+                    ? runtimeException
+                    : new FileUploadException("Failed to upload files to dialog", ex);
         }
 
         return storedFiles;
     }
 
     private FileMetadata addFileToDialog(Dialog dialog, MultipartFile file) throws IOException {
-        String extension = validateExtension(file.getOriginalFilename());
-        String storageFileName = UUID.randomUUID() + "." + extension;
+        ExtensionsEnum parsedExtension = resolveSupportedExtension(file.getOriginalFilename());
+        String extractedText = extractTextOrThrow(file, parsedExtension);
+        String storageFileName = UUID.randomUUID() + "." + parsedExtension.value();
+
+        uploadToStorage(storageFileName, file);
+
+        FileMetadata saved = saveFileMetadata(dialog, file, storageFileName);
+        RagFileRequest ragFile = toRagFileRequest(saved, extractedText);
 
         try {
-            fileStorageService.uploadFile(storageFileName, file.getInputStream(), file.getSize());
-        } catch (IOException e) {
-            throw new FileUploadException("Could not store file " + file.getOriginalFilename(), e);
+            ragCommunicationService.loadFileToRag(dialog.getId(), List.of(ragFile));
+            return saved;
+        } catch (RuntimeException ex) {
+            cleanupPersistedFile(saved.getId(), storageFileName);
+            throw ex;
         }
-
-        FileMetadata fileMetadata = new FileMetadata();
-        fileMetadata.setDialog(dialog);
-        fileMetadata.setOriginalFileName(file.getOriginalFilename());
-        fileMetadata.setStorageFileName(storageFileName);
-        fileMetadata.setFileSize(file.getSize());
-        fileMetadata.setMimeType(file.getContentType());
-
-        FileMetadata saved = fileMetadataRepository.save(fileMetadata);
-        Optional<ExtensionsEnum> parsedExtension = ExtensionsEnum.fromValue(extension);
-        if (parsedExtension.filter(TEXT_BASED_EXTENSIONS::contains).isPresent()) {
-            sendFileToRag(dialog.getId(), saved, file, parsedExtension.get());
-        }
-
-        return saved;
     }
 
-    private void sendFileToRag(Long dialogId, FileMetadata metadata, MultipartFile file, ExtensionsEnum extension) throws IOException {
-        String text = FileParserFactory.getParser(extension).parse(file);
-        if (text == null || text.isBlank()) {
-            return;
+    //ToDo: Мб переделать через статусы, помечать в handle что файл битый, а не делать cleanup
+    private CompletableFuture<FileMetadata> addFileToDialogAsync(Dialog dialog, MultipartFile file) throws IOException {
+        ExtensionsEnum parsedExtension = resolveSupportedExtension(file.getOriginalFilename());
+        String extractedText = extractTextOrThrow(file, parsedExtension);
+        String storageFileName = UUID.randomUUID() + "." + parsedExtension.value();
+
+        uploadToStorage(storageFileName, file);
+
+        FileMetadata saved = saveFileMetadata(dialog, file, storageFileName);
+        RagFileRequest ragFile = toRagFileRequest(saved, extractedText);
+
+        return ragCommunicationService.loadFileToRagAsync(dialog.getId(), List.of(ragFile))
+                .handle((unused, ex) -> {
+                    if (ex != null) {
+                        cleanupPersistedFile(saved.getId(), storageFileName);
+                        throw propagateAsyncFailure(ex);
+                    }
+                    return saved;
+                });
+    }
+
+    public CompletableFuture<List<DialogFileResponse>> addFilesToDialogAsync(
+            Long dialogId,
+            User currentUser,
+            MultipartFile[] files
+    ) {
+        if (files == null || files.length == 0) {
+            throw new IllegalArgumentException("At least one file must be provided.");
         }
-        RagFileRequest fileInf = new RagFileRequest(metadata.getId().toString(), metadata.getOriginalFileName(), text);
-        ragCommunicationService.loadFileToRag(dialogId, List.of(fileInf));
+
+        Dialog dialog = getDialog(dialogId);
+        assertDialogOwner(dialog, currentUser);
+
+        List<CompletableFuture<FileMetadata>> futures = new ArrayList<>();
+        for (MultipartFile file : files) {
+            try {
+                futures.add(addFileToDialogAsync(dialog, file));
+            } catch (IOException e) {
+                cleanupFiles(completedSuccessfully(futures));
+                throw new FileUploadException("Failed to upload file: " + file.getOriginalFilename(), e);
+            }
+        }
+
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .handle((unused, ex) -> {
+                    if (ex != null) {
+                        cleanupFiles(completedSuccessfully(futures));
+                        throw propagateAsyncFailure(ex);
+                    }
+
+                    return futures.stream()
+                            .map(CompletableFuture::join)
+                            .map(saved -> toFileResponse(saved, dialog.getId()))
+                            .toList();
+                });
     }
 
     private String validateExtension(String filename) {
@@ -148,6 +223,111 @@ public class DialogService {
             return "";
         }
         return filename.substring(filename.lastIndexOf(".") + 1).toLowerCase(Locale.ROOT);
+    }
+
+    private ExtensionsEnum resolveSupportedExtension(String filename) {
+        String extension = validateExtension(filename);
+        return ExtensionsEnum.fromValue(extension)
+                .filter(TEXT_BASED_EXTENSIONS::contains)
+                .orElseThrow(() -> new UnsupportedFileExtension(
+                        String.format("File extension '%s' is not supported", extension)
+                ));
+    }
+
+    private String extractTextOrThrow(MultipartFile file, ExtensionsEnum extension) throws IOException {
+        String text = FileParserFactory.getParser(extension).parse(file);
+        if (text == null || text.isBlank()) {
+            throw new TextExtractionException(
+                    String.format("Unable to extract text from file '%s'", file.getOriginalFilename())
+            );
+        }
+        return text;
+    }
+
+    private void uploadToStorage(String storageFileName, MultipartFile file) {
+        try {
+            fileStorageService.uploadFile(storageFileName, file.getInputStream(), file.getSize());
+        } catch (IOException e) {
+            throw new FileUploadException("Could not store file " + file.getOriginalFilename(), e);
+        }
+    }
+
+    private FileMetadata saveFileMetadata(Dialog dialog, MultipartFile file, String storageFileName) {
+        FileMetadata fileMetadata = new FileMetadata();
+        fileMetadata.setDialog(dialog);
+        fileMetadata.setOriginalFileName(file.getOriginalFilename());
+        fileMetadata.setStorageFileName(storageFileName);
+        fileMetadata.setFileSize(file.getSize());
+        fileMetadata.setMimeType(file.getContentType());
+
+        try {
+            return fileMetadataRepository.save(fileMetadata);
+        } catch (RuntimeException ex) {
+            cleanupStorageFile(storageFileName);
+            throw ex;
+        }
+    }
+
+    private RagFileRequest toRagFileRequest(FileMetadata metadata, String extractedText) {
+        return new RagFileRequest(
+                metadata.getId().toString(),
+                metadata.getOriginalFileName(),
+                extractedText
+        );
+    }
+
+    private void cleanupPersistedFile(Long fileId, String storageFileName) {
+        try {
+            fileMetadataRepository.deleteById(fileId);
+        } catch (RuntimeException ignored) {
+        }
+        cleanupStorageFile(storageFileName);
+    }
+
+    private void cleanupFiles(List<FileMetadata> files) {
+        for (FileMetadata file : files) {
+            cleanupPersistedFile(file.getId(), file.getStorageFileName());
+        }
+    }
+
+    private void cleanupStorageFile(String storageFileName) {
+        try {
+            fileStorageService.deleteFile(storageFileName);
+        } catch (RuntimeException ignored) {
+        }
+    }
+
+    private void cleanupDialogArtifacts(Dialog dialog) {
+        try {
+            Dialog managedDialog = dialogRepository.findById(dialog.getId()).orElse(dialog);
+            for (FileMetadata file : managedDialog.getFiles()) {
+                cleanupStorageFile(file.getStorageFileName());
+            }
+            dialogRepository.delete(managedDialog);
+        } catch (RuntimeException ignored) {
+        }
+    }
+
+    private RuntimeException propagateAsyncFailure(Throwable ex) {
+        if (ex instanceof CompletionException completionException && completionException.getCause() != null) {
+            Throwable cause = completionException.getCause();
+            if (cause instanceof RuntimeException runtimeException) {
+                return runtimeException;
+            }
+            return new CompletionException(cause);
+        }
+        if (ex instanceof RuntimeException runtimeException) {
+            return runtimeException;
+        }
+        return new CompletionException(ex);
+    }
+
+    private List<FileMetadata> completedSuccessfully(List<CompletableFuture<FileMetadata>> futures) {
+        return futures.stream()
+                .filter(CompletableFuture::isDone)
+                .filter(future -> !future.isCompletedExceptionally())
+                .map(CompletableFuture::join)
+                .toList();
     }
 
     @Transactional(readOnly = true)
