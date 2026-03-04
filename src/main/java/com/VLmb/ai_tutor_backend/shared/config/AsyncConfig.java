@@ -7,6 +7,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
+//ToDo: добавление многопоточности для взаимодействия с S3 хранилищем
 @Configuration
 @EnableAsync
 public class AsyncConfig {
