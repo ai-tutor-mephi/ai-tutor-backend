@@ -20,8 +20,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -35,7 +35,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import java.io.File;
+import java.util.UUID;
 import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -108,10 +108,14 @@ class DialogFlowIntegrationTest {
         stubRagLoadSuccess();
         doNothing().when(fileStorageService).uploadFile(anyString(), any(), anyLong());
 
-        String accessToken = registerAndLoginUser("user1", "user1@email.com", "password1234");
+        String accessToken = registerAndLoginUser(
+                "user1-" + UUID.randomUUID().toString().substring(0, 8),
+                "user1+" + UUID.randomUUID().toString().substring(0, 8) + "@email.com",
+                "password1234"
+        );
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("files", new FileSystemResource(new File("src/test/resources/test-horse.txt")));
+        body.add("files", new ClassPathResource("test-horse.txt"));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
@@ -137,10 +141,14 @@ class DialogFlowIntegrationTest {
         stubRagLoadSuccess();
         doNothing().when(fileStorageService).uploadFile(anyString(), any(), anyLong());
 
-        String accessToken = registerAndLoginUser("user2", "user2@email.com", "password1234");
+        String accessToken = registerAndLoginUser(
+                "user2-" + UUID.randomUUID().toString().substring(0, 8),
+                "user2+" + UUID.randomUUID().toString().substring(0, 8) + "@email.com",
+                "password1234"
+        );
 
         MultiValueMap<String, Object> createBody = new LinkedMultiValueMap<>();
-        createBody.add("files", new FileSystemResource(new File("src/test/resources/test-horse.txt")));
+        createBody.add("files", new ClassPathResource("test-horse.txt"));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
@@ -157,8 +165,8 @@ class DialogFlowIntegrationTest {
         Long dialogId = createResponse.getBody().dialogId();
 
         MultiValueMap<String, Object> updateBody = new LinkedMultiValueMap<>();
-        updateBody.add("files", new FileSystemResource(new File("src/test/resources/test-donkey.docx")));
-        updateBody.add("files", new FileSystemResource(new File("src/test/resources/test-penguin.pdf")));
+        updateBody.add("files", new ClassPathResource("test-donkey.docx"));
+        updateBody.add("files", new ClassPathResource("test-penguin.pdf"));
 
         ResponseEntity<List<DialogFileResponse>> updateResponse = restTemplate.exchange(
                 DIALOG_FILES.formatted(dialogId),
@@ -177,7 +185,11 @@ class DialogFlowIntegrationTest {
     void shouldReturn422WhenTextCannotBeExtracted() {
         doNothing().when(fileStorageService).uploadFile(anyString(), any(), anyLong());
 
-        String accessToken = registerAndLoginUser("user3", "user3@email.com", "password1234");
+        String accessToken = registerAndLoginUser(
+                "user3-" + UUID.randomUUID().toString().substring(0, 8),
+                "user3+" + UUID.randomUUID().toString().substring(0, 8) + "@email.com",
+                "password1234"
+        );
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("files", new ByteArrayResource(new byte[0]) {
@@ -210,12 +222,13 @@ class DialogFlowIntegrationTest {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         RegisterRequest registerRequest = new RegisterRequest(username, email, password);
-        restTemplate.exchange(
+        ResponseEntity<String> registerResponse = restTemplate.exchange(
                 AUTH_REGISTER,
                 HttpMethod.POST,
                 new HttpEntity<>(registerRequest, headers),
                 String.class
         );
+        assertEquals(HttpStatus.CREATED, registerResponse.getStatusCode());
 
         LoginRequest loginRequest = new LoginRequest(username, password);
         ResponseEntity<LoginResponse> loginResponse = restTemplate.exchange(
