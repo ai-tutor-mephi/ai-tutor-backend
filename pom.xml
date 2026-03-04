@@ -119,11 +119,11 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Spring Cloud Contract Wiremock -->
+        <!-- WireMock -->
         <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-contract-wiremock</artifactId>
-            <version>5.0.1</version> <!-- Обновлено под совместимость со Spring Boot 3.5.x -->
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+            <version>3.13.1</version>
             <scope>test</scope>
         </dependency>
 
