@@ -33,3 +33,5 @@ build/
 .vscode/
 
 .env
+
+deprecated-pom.txt
