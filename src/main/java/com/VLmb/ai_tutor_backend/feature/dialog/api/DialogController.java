@@ -8,6 +8,7 @@ import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.CreateDialogResponse;
 import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.SendMessageRequest;
 import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.SendMessageResponse;
 import com.VLmb.ai_tutor_backend.feature.dialog.application.DialogService;
+import com.VLmb.ai_tutor_backend.feature.dialog.application.flow.DialogFlowService;
 import com.VLmb.ai_tutor_backend.feature.file.application.DialogFileResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class DialogController {
 
+    private final DialogFlowService dialogFlowService;
     private final DialogService dialogService;
 
     @PostMapping(path = "/with-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -34,7 +36,7 @@ public class DialogController {
             @AuthenticationPrincipal CustomUserDetails principal,
             @RequestParam("files") MultipartFile[] files) {
 
-        return dialogService.createDialogWithFilesAsync(principal.getUser(), files)
+        return dialogFlowService.createDialogWithFiles(principal.getUser(), files)
                 .thenApply(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 
@@ -44,7 +46,7 @@ public class DialogController {
             @AuthenticationPrincipal CustomUserDetails principal,
             @RequestParam("files") MultipartFile[] files) {
 
-        return dialogService.addFilesToDialogAsync(dialogId, principal.getUser(), files)
+        return dialogFlowService.addFilesToDialog(dialogId, principal.getUser(), files)
                 .thenApply(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 
@@ -54,7 +56,7 @@ public class DialogController {
             @AuthenticationPrincipal CustomUserDetails principal,
             @RequestBody SendMessageRequest messageRequest) {
 
-        return dialogService.sendQuestionAsync(messageRequest, principal.getUser(), dialogId)
+        return dialogFlowService.sendQuestion(messageRequest, principal.getUser(), dialogId)
                 .thenApply(response -> ResponseEntity.status(HttpStatus.OK).body(response));
     }
 
