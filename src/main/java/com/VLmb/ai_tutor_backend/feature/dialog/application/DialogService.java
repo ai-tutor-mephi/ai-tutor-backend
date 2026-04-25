@@ -24,6 +24,7 @@ import com.VLmb.ai_tutor_backend.feature.rag.application.RagCommunicationService
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.TextExtractionException;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.UnsupportedFileExtension;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,7 @@ import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class DialogService {
 
@@ -58,11 +60,16 @@ public class DialogService {
     @Qualifier("dbExecutor")
     private final TaskExecutor dbExecutor;
 
-    @Transactional
     public CreateDialogResponse createDialogWithFiles(User user, MultipartFile[] files) throws IOException {
         if (files == null || files.length == 0) {
             throw new IllegalArgumentException("At least one file must be provided.");
         }
+
+        log.info(
+                "event=dialog_create_with_files_start user_id={} file_count={}",
+                user.getId(),
+                files.length
+        );
 
         Dialog dialog = new Dialog();
         dialog.setOwner(user);
@@ -73,7 +80,20 @@ public class DialogService {
             for (MultipartFile file : files) {
                 addFileToDialog(savedDialog, file);
             }
+            log.info(
+                    "event=dialog_create_with_files_success dialog_id={} user_id={} file_count={}",
+                    savedDialog.getId(),
+                    user.getId(),
+                    files.length
+            );
         } catch (RuntimeException | IOException ex) {
+            log.warn(
+                    "event=dialog_create_with_files_failed dialog_id={} user_id={} message={}",
+                    savedDialog.getId(),
+                    user.getId(),
+                    ex.getMessage(),
+                    ex
+            );
             cleanupDialogArtifacts(savedDialog);
             throw ex instanceof RuntimeException runtimeException
                     ? runtimeException
@@ -88,6 +108,12 @@ public class DialogService {
             throw new IllegalArgumentException("At least one file must be provided.");
         }
 
+        log.info(
+                "event=dialog_create_with_files_async_start user_id={} file_count={}",
+                user.getId(),
+                files.length
+        );
+
         Dialog dialog = new Dialog();
         dialog.setOwner(user);
         dialog.setTitle(files[0].getOriginalFilename());
@@ -98,20 +124,46 @@ public class DialogService {
                     .thenApply(unused -> new CreateDialogResponse(savedDialog.getId(), savedDialog.getTitle()))
                     .whenComplete((unused, ex) -> {
                         if (ex != null) {
+                            log.warn(
+                                    "event=dialog_create_with_files_async_failed dialog_id={} user_id={} message={}",
+                                    savedDialog.getId(),
+                                    user.getId(),
+                                    ex.getMessage()
+                            );
                             cleanupDialogArtifacts(savedDialog);
+                        } else {
+                            log.info(
+                                    "event=dialog_create_with_files_async_success dialog_id={} user_id={} file_count={}",
+                                    savedDialog.getId(),
+                                    user.getId(),
+                                    files.length
+                            );
                         }
                     });
         } catch (RuntimeException ex) {
+            log.warn(
+                    "event=dialog_create_with_files_async_failed dialog_id={} user_id={} message={}",
+                    savedDialog.getId(),
+                    user.getId(),
+                    ex.getMessage(),
+                    ex
+            );
             cleanupDialogArtifacts(savedDialog);
             throw ex;
         }
     }
 
-    @Transactional
     public List<DialogFileResponse> addFilesToDialog(Long dialogId, User currentUser, MultipartFile[] files) throws IOException {
         if (files == null || files.length == 0) {
             throw new IllegalArgumentException("At least one file must be provided.");
         }
+
+        log.info(
+                "event=dialog_add_files_start dialog_id={} user_id={} file_count={}",
+                dialogId,
+                currentUser.getId(),
+                files.length
+        );
 
         Dialog dialog = getDialog(dialogId);
         assertDialogOwner(dialog, currentUser);
@@ -124,7 +176,20 @@ public class DialogService {
                 uploadedFiles.add(savedFile);
                 storedFiles.add(toFileResponse(savedFile, dialog.getId()));
             }
+            log.info(
+                    "event=dialog_add_files_success dialog_id={} user_id={} file_count={}",
+                    dialogId,
+                    currentUser.getId(),
+                    files.length
+            );
         } catch (RuntimeException | IOException ex) {
+            log.warn(
+                    "event=dialog_add_files_failed dialog_id={} user_id={} message={}",
+                    dialogId,
+                    currentUser.getId(),
+                    ex.getMessage(),
+                    ex
+            );
             cleanupFiles(uploadedFiles);
             throw ex instanceof RuntimeException runtimeException
                     ? runtimeException
@@ -143,7 +208,6 @@ public class DialogService {
 
         FileMetadata saved = saveFileMetadata(dialog, file, storageFileName);
         RagFileRequest ragFile = toRagFileRequest(saved, extractedText);
-
         try {
             ragCommunicationService.loadFileToRag(dialog.getId(), List.of(ragFile));
             return saved;
@@ -183,6 +247,13 @@ public class DialogService {
             throw new IllegalArgumentException("At least one file must be provided.");
         }
 
+        log.info(
+                "event=dialog_add_files_async_start dialog_id={} user_id={} file_count={}",
+                dialogId,
+                currentUser.getId(),
+                files.length
+        );
+
         Dialog dialog = getDialog(dialogId);
         assertDialogOwner(dialog, currentUser);
 
@@ -199,10 +270,22 @@ public class DialogService {
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
                 .handle((unused, ex) -> {
                     if (ex != null) {
+                        log.warn(
+                                "event=dialog_add_files_async_failed dialog_id={} user_id={} message={}",
+                                dialogId,
+                                currentUser.getId(),
+                                ex.getMessage()
+                        );
                         cleanupFiles(completedSuccessfully(futures));
                         throw propagateAsyncFailure(ex);
                     }
 
+                    log.info(
+                            "event=dialog_add_files_async_success dialog_id={} user_id={} file_count={}",
+                            dialogId,
+                            currentUser.getId(),
+                            files.length
+                    );
                     return futures.stream()
                             .map(CompletableFuture::join)
                             .map(saved -> toFileResponse(saved, dialog.getId()))
@@ -299,11 +382,11 @@ public class DialogService {
 
     private void cleanupDialogArtifacts(Dialog dialog) {
         try {
-            Dialog managedDialog = dialogRepository.findById(dialog.getId()).orElse(dialog);
-            for (FileMetadata file : managedDialog.getFiles()) {
+            List<FileMetadata> files = fileMetadataRepository.findByDialogId(dialog.getId());
+            for (FileMetadata file : files) {
                 cleanupStorageFile(file.getStorageFileName());
             }
-            dialogRepository.delete(managedDialog);
+            dialogRepository.deleteById(dialog.getId());
         } catch (RuntimeException ignored) {
         }
     }
@@ -371,8 +454,13 @@ public class DialogService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
     public SendMessageResponse sendQuestion(SendMessageRequest messageRequest, User currentUser, Long dialogId) throws IOException {
+
+        log.info(
+                "event=dialog_send_question_start dialog_id={} user_id={}",
+                dialogId,
+                currentUser.getId()
+        );
 
         Message question = new Message();
         question.setRole(Message.MessageRole.USER);
@@ -391,6 +479,14 @@ public class DialogService {
             messageRepository.save(answer);
         }
 
+        log.info(
+                "event=dialog_send_question_success dialog_id={} user_id={} has_answer={} answer_len={}",
+                dialogId,
+                currentUser.getId(),
+                messageResponse.answer() != null,
+                messageResponse.answer() == null ? 0 : messageResponse.answer().length()
+        );
+
         return messageResponse;
     }
 
@@ -401,6 +497,12 @@ public class DialogService {
     ) {
         Dialog dialog = getDialog(dialogId);
         assertDialogOwner(dialog, currentUser);
+
+        log.info(
+                "event=dialog_send_question_async_start dialog_id={} user_id={}",
+                dialogId,
+                currentUser.getId()
+        );
 
         Message question = new Message();
         question.setRole(Message.MessageRole.USER);
@@ -419,6 +521,13 @@ public class DialogService {
                         messageRepository.save(answer);
                     }
 
+                    log.info(
+                            "event=dialog_send_question_async_success dialog_id={} user_id={} has_answer={} answer_len={}",
+                            dialogId,
+                            currentUser.getId(),
+                            messageResponse.answer() != null,
+                            messageResponse.answer() == null ? 0 : messageResponse.answer().length()
+                    );
                     return messageResponse;
                 }, dbExecutor);
     }
@@ -428,17 +537,31 @@ public class DialogService {
         Dialog dialog = getDialog(dialogId);
         assertDialogOwner(dialog, currentUser);
 
-        for (FileMetadata file : dialog.getFiles()) {
+        List<FileMetadata> files = fileMetadataRepository.findByDialogId(dialogId);
+        log.info(
+                "event=dialog_delete dialog_id={} user_id={} file_count={}",
+                dialogId,
+                currentUser.getId(),
+                files.size()
+        );
+
+        for (FileMetadata file : files) {
             fileStorageService.deleteFile(file.getStorageFileName());
         }
 
-        dialogRepository.delete(dialog);
+        dialogRepository.deleteById(dialogId);
     }
 
     @Transactional
     public DialogSummaryResponse changeDialogTitle(Long dialogId, User currentUser, String newTitle) {
         Dialog dialog = getDialog(dialogId);
         assertDialogOwner(dialog, currentUser);
+        log.info(
+                "event=dialog_title_change dialog_id={} user_id={} new_title_len={}",
+                dialogId,
+                currentUser.getId(),
+                newTitle == null ? 0 : newTitle.length()
+        );
         dialog.setTitle(newTitle);
         Dialog saved = dialogRepository.save(dialog);
         return new DialogSummaryResponse(saved.getId(), saved.getTitle(), saved.getCreatedAt());

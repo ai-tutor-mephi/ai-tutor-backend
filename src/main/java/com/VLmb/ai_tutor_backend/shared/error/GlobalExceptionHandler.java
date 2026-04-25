@@ -8,6 +8,7 @@ import com.VLmb.ai_tutor_backend.shared.error.exceptions.TextExtractionException
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.TokenRefreshException;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.UnsupportedFileExtension;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.OffsetDateTime;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -30,32 +32,59 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException ex, HttpServletRequest request) {
+        logException(HttpStatus.NOT_FOUND, ex, request);
         return createErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request.getRequestURI());
     }
 
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateResourceException(DuplicateResourceException ex, HttpServletRequest request) {
+        logException(HttpStatus.CONFLICT, ex, request);
         return createErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
     }
 
     @ExceptionHandler(TokenRefreshException.class)
     public ResponseEntity<ErrorResponse> handleTokenRefreshException(TokenRefreshException ex, HttpServletRequest request) {
+        logException(HttpStatus.FORBIDDEN, ex, request);
         return createErrorResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI());
     }
 
     @ExceptionHandler(FileUploadException.class)
     public ResponseEntity<ErrorResponse> handleFileUploadException(FileUploadException ex, HttpServletRequest request) {
+        logException(HttpStatus.INTERNAL_SERVER_ERROR, ex, request);
         return createErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request.getRequestURI());
     }
 
     @ExceptionHandler(TextExtractionException.class)
     public ResponseEntity<ErrorResponse> handleTextExtractionException(TextExtractionException ex, HttpServletRequest request) {
+        logException(HttpStatus.UNPROCESSABLE_ENTITY, ex, request);
         return createErrorResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request.getRequestURI());
     }
 
     @ExceptionHandler(UnsupportedFileExtension.class)
     public ResponseEntity<ErrorResponse> handleUnsupportedFileExtension(UnsupportedFileExtension ex, HttpServletRequest request) {
+        logException(HttpStatus.UNPROCESSABLE_ENTITY, ex, request);
         return createErrorResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request.getRequestURI());
+    }
+
+    private void logException(HttpStatus status, Exception ex, HttpServletRequest request) {
+        if (status.is5xxServerError()) {
+            log.error(
+                    "event=exception_handled status={} type={} path={} message={}",
+                    status.value(),
+                    ex.getClass().getSimpleName(),
+                    request.getRequestURI(),
+                    ex.getMessage(),
+                    ex
+            );
+        } else {
+            log.warn(
+                    "event=exception_handled status={} type={} path={} message={}",
+                    status.value(),
+                    ex.getClass().getSimpleName(),
+                    request.getRequestURI(),
+                    ex.getMessage()
+            );
+        }
     }
 
 }

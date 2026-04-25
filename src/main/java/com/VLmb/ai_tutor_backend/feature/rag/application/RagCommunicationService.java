@@ -9,8 +9,10 @@ import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagFileRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagLoadFilesRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQueryRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.awt.print.Pageable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -20,12 +22,18 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class RagCommunicationService {
 
+    public static final int QUERY_TIMEOUT = 30;
+    private final Integer MESSAGE_COUNT = 20;
+
     private final MessageRepository messageRepository;
     private final RagRestClient ragRestClient;
 
     public SendMessageResponse sendQuestionToRag(Long dialogId, Message question) {
         List<DialogMessageResponse> dialogMessages = new ArrayList<>();
-        for (Message message: messageRepository.findByDialogId(dialogId)) {
+        for (Message message: messageRepository.findByDialogIdOrderByCreatedAtDesc(
+                dialogId,
+                PageRequest.of(0, MESSAGE_COUNT)
+                )) {
             dialogMessages.add(new DialogMessageResponse(message.getContent(), message.getRole()));
         }
 
@@ -38,7 +46,10 @@ public class RagCommunicationService {
 
     public CompletableFuture<SendMessageResponse> sendQuestionToRagAsync(Long dialogId, Message question) {
         List<DialogMessageResponse> dialogMessages = new ArrayList<>();
-        for (Message message : messageRepository.findByDialogId(dialogId)) {
+        for (Message message: messageRepository.findByDialogIdOrderByCreatedAtDesc(
+                dialogId,
+                PageRequest.of(0, MESSAGE_COUNT)
+        )) {
             dialogMessages.add(new DialogMessageResponse(message.getContent(), message.getRole()));
         }
 
@@ -48,7 +59,7 @@ public class RagCommunicationService {
                 question.getContent()
         );
 
-        return ragRestClient.sendMessageAsync(request).orTimeout(10, TimeUnit.SECONDS);
+        return ragRestClient.sendMessageAsync(request).orTimeout(QUERY_TIMEOUT, TimeUnit.SECONDS);
     }
 
     public void loadFileToRag(Long dialogId, List<RagFileRequest> files) {

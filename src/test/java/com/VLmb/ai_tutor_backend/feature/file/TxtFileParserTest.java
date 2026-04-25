@@ -18,7 +18,7 @@ class TxtFileParserTest {
         String expected = "Line1\nLine2";
         MockMultipartFile file = new MockMultipartFile(
                 "file",
-                "sample.txt",
+                "test-file.txt",
                 "text/plain",
                 expected.getBytes(StandardCharsets.UTF_8)
         );

@@ -1,6 +1,19 @@
 services:
+  rag-mock:
+    build:
+      context: ./rag-mock
+    container_name: ai-tutor-rag-mock
+    environment:
+      RAG_MOCK_DELAY_SECONDS: ${RAG_MOCK_DELAY_SECONDS:-1}
+      RAG_MOCK_ANSWER: ${RAG_MOCK_ANSWER:-Mocked answer}
+    ports:
+      - "${RAG_PORT:-8000}:8000"
+    networks:
+      - ai_tutor_network
+
   db:
     image: postgres:15
+    command: postgres -c shared_preload_libraries=pg_stat_statements
     container_name: ai-tutor-db
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -43,6 +56,7 @@ services:
     ports:
       - "${APP_PORT:-8080}:8080"
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-platform}
       SPRING_DATASOURCE_URL: jdbc:postgresql://ai-tutor-db:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
@@ -56,32 +70,35 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      rag-mock:
+        condition: service_started
     networks:
       - ai_tutor_network
 
-  tests:
-    build:
-      context: .
-      target: tester
-    container_name: ai-tutor-tests
-    volumes:
-      - ./logs:/app/logs
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
-
-      APP_MINIO_ENDPOINT: ${APP_MINIO_ENDPOINT:-http://minio:9000}
-      APP_MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
-      APP_MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
-    depends_on:
-      db:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-    networks:
-      - ai_tutor_network
+#  tests:
+#    build:
+#      context: .
+#      target: tester
+#    container_name: ai-tutor-tests
+#    volumes:
+#      - ./logs:/app/logs
+#    environment:
+#      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-platform}
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+#      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+#      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+#      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
+#
+#      APP_MINIO_ENDPOINT: ${APP_MINIO_ENDPOINT:-http://minio:9000}
+#      APP_MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+#      APP_MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+#    depends_on:
+#      db:
+#        condition: service_healthy
+#      minio:
+#        condition: service_healthy
+#    networks:
+#      - ai_tutor_network
 
 networks:
   ai_tutor_network:
