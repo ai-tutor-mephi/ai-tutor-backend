@@ -1,6 +1,6 @@
-package com.VLmb.ai_tutor_backend.feature.test.infra;
+package com.VLmb.ai_tutor_backend.feature.quiz.infra;
 
-import com.VLmb.ai_tutor_backend.feature.test.domain.Quiz;
+import com.VLmb.ai_tutor_backend.feature.quiz.domain.Quiz;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

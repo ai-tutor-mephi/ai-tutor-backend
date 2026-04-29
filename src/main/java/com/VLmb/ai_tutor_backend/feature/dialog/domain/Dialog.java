@@ -2,7 +2,7 @@ package com.VLmb.ai_tutor_backend.feature.dialog.domain;
 
 import com.VLmb.ai_tutor_backend.feature.auth.domain.User;
 import com.VLmb.ai_tutor_backend.feature.file.domain.FileMetadata;
-import com.VLmb.ai_tutor_backend.feature.test.domain.Quiz;
+import com.VLmb.ai_tutor_backend.feature.quiz.domain.Quiz;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

@@ -1,4 +1,4 @@
-package com.VLmb.ai_tutor_backend.feature.test.domain;
+package com.VLmb.ai_tutor_backend.feature.quiz.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;

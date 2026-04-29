@@ -62,7 +62,7 @@ public class SecurityConfig {
                 ).permitAll()
                 .requestMatchers(POST, "/api/auth/logout").authenticated()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/dialogs/**", "/api/messages/**", "/api/files/**", "/api/user/**").authenticated()
+                .requestMatchers("/api/dialogs/**", "/api/messages/**", "/api/files/**", "/api/user/**", "/api/quiz/**").authenticated()
                 .anyRequest().denyAll()
         );
         http.authenticationProvider(authenticationProvider());

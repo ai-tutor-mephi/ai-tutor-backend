@@ -5,14 +5,15 @@ import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.DialogMessageResponse;
 import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.SendMessageResponse;
 import com.VLmb.ai_tutor_backend.feature.dialog.domain.Message;
 import com.VLmb.ai_tutor_backend.feature.dialog.infra.MessageRepository;
+import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizResponse;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagFileRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagLoadFilesRequest;
+import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQuizRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQueryRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
-import java.awt.print.Pageable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -60,6 +61,30 @@ public class RagCommunicationService {
         );
 
         return ragRestClient.sendMessageAsync(request).orTimeout(QUERY_TIMEOUT, TimeUnit.SECONDS);
+    }
+
+    public QuizResponse generateQuiz(Long dialogId) {
+        List<DialogMessageResponse> dialogMessages = messageRepository.findByDialogIdOrderByCreatedAt(dialogId)
+                .stream()
+                .map(message -> new DialogMessageResponse(message.getContent(), message.getRole()))
+                .toList();
+
+        return ragRestClient.generateQuiz(new RagQuizRequest(
+                dialogId.toString(),
+                dialogMessages
+        ));
+    }
+
+    public CompletableFuture<QuizResponse> generateQuizAsync(Long dialogId) {
+        List<DialogMessageResponse> dialogMessages = messageRepository.findByDialogIdOrderByCreatedAt(dialogId)
+                .stream()
+                .map(message -> new DialogMessageResponse(message.getContent(), message.getRole()))
+                .toList();
+
+        return ragRestClient.generateQuizAsync(new RagQuizRequest(
+                dialogId.toString(),
+                dialogMessages
+        ));
     }
 
     public void loadFileToRag(Long dialogId, List<RagFileRequest> files) {

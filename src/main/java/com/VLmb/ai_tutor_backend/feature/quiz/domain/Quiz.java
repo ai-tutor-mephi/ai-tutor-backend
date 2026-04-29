@@ -1,4 +1,4 @@
-package com.VLmb.ai_tutor_backend.feature.test.domain;
+package com.VLmb.ai_tutor_backend.feature.quiz.domain;
 
 import com.VLmb.ai_tutor_backend.feature.dialog.domain.Dialog;
 import jakarta.persistence.*;
