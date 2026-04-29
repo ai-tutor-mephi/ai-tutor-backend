@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -22,7 +23,11 @@ import java.io.IOException;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "virtual"})
+@TestPropertySource(properties = {
+        "clients.rag.base-url=http://localhost:8089"
+})
+
 class FileParsingIntegrationTest {
 
     @Autowired

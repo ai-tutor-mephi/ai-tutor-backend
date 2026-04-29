@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "virtual"})
 public class SendMessageIntegrationTest {
 
     private static final String AUTH_REGISTER = "/api/auth/register";
