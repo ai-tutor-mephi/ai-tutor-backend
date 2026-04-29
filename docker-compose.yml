@@ -66,6 +66,7 @@ services:
       - ai_tutor_network
 
   tests:
+    profiles: ["tests"]
     build:
       context: .
       target: tester
