@@ -29,7 +29,7 @@ import java.util.concurrent.CompletableFuture;
 public class DialogController {
 
     private final DialogFlowService dialogFlowService;
-    private final DialogSer`vice dialogService;
+    private final DialogService dialogService;
 
     @PostMapping(path = "/with-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public CompletableFuture<ResponseEntity<CreateDialogResponse>> createDialogWithFiles(

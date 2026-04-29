@@ -2,7 +2,7 @@ spring:
   application:
     name: ai-tutor-backend-test
   profiles:
-    include: platform
+    include: virtual
 
   datasource:
     url: jdbc:tc:postgresql:15:///testdb
