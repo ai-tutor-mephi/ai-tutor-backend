@@ -3,13 +3,9 @@
   "info": {
     "title": "AI Tutor Backend API",
     "version": "1.0.0",
-    "description": "REST API for dialog management, authentication, and RAG message exchange."
+    "description": "REST API for authentication, dialogs, files, quiz generation, and user management."
   },
   "servers": [
-    {
-      "url": "https://api.example.com",
-      "description": "Production"
-    },
     {
       "url": "http://localhost:8080",
       "description": "Local"
@@ -185,7 +181,7 @@
           "answer"
         ]
       },
-      "DialogMessagesDto": {
+      "DialogMessage": {
         "type": "object",
         "properties": {
           "message": {
@@ -214,41 +210,13 @@
           "dialogMessages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DialogMessagesDto"
+              "$ref": "#/components/schemas/DialogMessage"
             }
           }
         },
         "required": [
           "dialogId",
           "dialogMessages"
-        ]
-      },
-      "ErrorResponse": {
-        "type": "object",
-        "properties": {
-          "timestamp": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "status": {
-            "type": "integer"
-          },
-          "error": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "path": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "timestamp",
-          "status",
-          "error",
-          "message",
-          "path"
         ]
       },
       "ChangeUsernameRequest": {
@@ -279,72 +247,78 @@
           "userId",
           "userName"
         ]
+      },
+      "QuizQuestionResponse": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "gold_answer": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "variants",
+          "gold_answer"
+        ]
+      },
+      "QuizResponse": {
+        "type": "object",
+        "properties": {
+          "test_name": {
+            "type": "string"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuizQuestionResponse"
+            }
+          }
+        },
+        "required": [
+          "test_name",
+          "questions"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "timestamp",
+          "status",
+          "error",
+          "message",
+          "path"
+        ]
       }
     }
   },
   "paths": {
-    "/api/user/change-username": {
-      "post": {
-        "summary": "Change current user's username",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChangeUsernameRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Username updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChangeUsernameResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Validation error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Username already exists",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/auth/register": {
       "post": {
         "summary": "Register a new user",
@@ -372,6 +346,16 @@
           },
           "400": {
             "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Duplicate user/email",
             "content": {
               "application/json": {
                 "schema": {
@@ -444,8 +428,8 @@
               }
             }
           },
-          "401": {
-            "description": "Refresh token invalid",
+          "403": {
+            "description": "Refresh token invalid or expired",
             "content": {
               "application/json": {
                 "schema": {
@@ -483,6 +467,93 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/change-username": {
+      "post": {
+        "summary": "Change current user's username",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeUsernameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Username updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeUsernameResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Username already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dialogs": {
+      "get": {
+        "summary": "List dialogs for current user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dialogs retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DialogInfo"
+                  }
                 }
               }
             }
@@ -533,6 +604,16 @@
           },
           "400": {
             "description": "Request validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Text extraction or file content error",
             "content": {
               "application/json": {
                 "schema": {
@@ -599,8 +680,8 @@
               }
             }
           },
-          "400": {
-            "description": "Upload error",
+          "404": {
+            "description": "Dialog not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -609,8 +690,8 @@
               }
             }
           },
-          "404": {
-            "description": "Dialog not found",
+          "422": {
+            "description": "Text extraction or file content error",
             "content": {
               "application/json": {
                 "schema": {
@@ -640,7 +721,7 @@
           }
         ],
         "responses": {
-          "200": {
+          "201": {
             "description": "Files retrieved",
             "content": {
               "application/json": {
@@ -721,7 +802,7 @@
     },
     "/api/dialogs/{dialogId}/messages": {
       "get": {
-        "summary": "Get messages from a dialog (newest first)",
+        "summary": "Get messages from a dialog",
         "security": [
           {
             "bearerAuth": []
@@ -748,42 +829,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Dialog not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/dialogs/{dialogId}": {
-      "delete": {
-        "summary": "Delete dialog by id",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "dialogId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Dialog deleted"
           },
           "404": {
             "description": "Dialog not found",
@@ -861,24 +906,174 @@
         }
       }
     },
-    "/api/dialogs": {
-      "get": {
-        "summary": "List dialogs for current user",
+    "/api/dialogs/{dialogId}": {
+      "delete": {
+        "summary": "Delete dialog by id",
         "security": [
           {
             "bearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "dialogId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Dialog deleted"
+          },
+          "404": {
+            "description": "Dialog not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quiz": {
+      "post": {
+        "summary": "Generate and persist quiz for a dialog",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dialogId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Quiz generated and saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Dialog not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get all quizzes for a dialog",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dialogId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Dialogs retrieved",
+            "description": "Quizzes retrieved",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/DialogInfo"
+                    "$ref": "#/components/schemas/QuizResponse"
                   }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Dialog not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quiz/{quizId}": {
+      "get": {
+        "summary": "Get a single quiz by id within a dialog",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "quizId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "dialogId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quiz retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quiz or dialog not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
