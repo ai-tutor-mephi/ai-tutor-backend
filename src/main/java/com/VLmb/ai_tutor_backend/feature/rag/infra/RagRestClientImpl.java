@@ -22,7 +22,7 @@ public class RagRestClientImpl implements RagRestClient {
     private final RestClient client;
     private final TaskExecutor ragExecutor;
     private static final String SEND_MESSAGE_PATH = "/query";
-    private static final String GENERATE_TEST_PATH = "/test";
+    private static final String GENERATE_TEST_PATH = "/tests";
     private static final String LOAD_FILES_PATH = "/load";
 
     public RagRestClientImpl(RestClient ragRestClient, @Qualifier("ragExecutor") TaskExecutor ragExecutor) {
