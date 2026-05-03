@@ -5,10 +5,10 @@ import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.DialogMessageResponse;
 import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.SendMessageResponse;
 import com.VLmb.ai_tutor_backend.feature.dialog.domain.Message;
 import com.VLmb.ai_tutor_backend.feature.dialog.infra.MessageRepository;
-import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizResponse;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagFileRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagLoadFilesRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQuizRequest;
+import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQuizResponse;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQueryRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -63,7 +63,7 @@ public class RagCommunicationService {
         return ragRestClient.sendMessageAsync(request).orTimeout(QUERY_TIMEOUT, TimeUnit.SECONDS);
     }
 
-    public QuizResponse generateQuiz(Long dialogId) {
+    public RagQuizResponse generateQuiz(Long dialogId) {
         List<DialogMessageResponse> dialogMessages = messageRepository.findByDialogIdOrderByCreatedAt(dialogId)
                 .stream()
                 .map(message -> new DialogMessageResponse(message.getContent(), message.getRole()))
@@ -75,7 +75,7 @@ public class RagCommunicationService {
         ));
     }
 
-    public CompletableFuture<QuizResponse> generateQuizAsync(Long dialogId) {
+    public CompletableFuture<RagQuizResponse> generateQuizAsync(Long dialogId) {
         List<DialogMessageResponse> dialogMessages = messageRepository.findByDialogIdOrderByCreatedAt(dialogId)
                 .stream()
                 .map(message -> new DialogMessageResponse(message.getContent(), message.getRole()))

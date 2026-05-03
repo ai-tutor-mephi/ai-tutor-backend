@@ -251,6 +251,10 @@
       "QuizQuestionResponse": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
           "question": {
             "type": "string"
           },
@@ -259,20 +263,21 @@
             "items": {
               "type": "string"
             }
-          },
-          "gold_answer": {
-            "type": "string"
           }
         },
         "required": [
+          "id",
           "question",
-          "variants",
-          "gold_answer"
+          "variants"
         ]
       },
       "QuizResponse": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
           "test_name": {
             "type": "string"
           },
@@ -284,7 +289,92 @@
           }
         },
         "required": [
+          "id",
           "test_name",
+          "questions"
+        ]
+      },
+      "QuizAnswerRequest": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "answer": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "questionId"
+        ]
+      },
+      "QuizScoreRequest": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuizAnswerRequest"
+            }
+          }
+        },
+        "required": [
+          "answers"
+        ]
+      },
+      "QuizQuestionScoreResponse": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "selectedAnswer": {
+            "type": "string"
+          },
+          "correctAnswer": {
+            "type": "string"
+          },
+          "correct": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "questionId",
+          "correctAnswer",
+          "correct"
+        ]
+      },
+      "QuizScoreResponse": {
+        "type": "object",
+        "properties": {
+          "quizId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalQuestions": {
+            "type": "integer"
+          },
+          "correctAnswers": {
+            "type": "integer"
+          },
+          "score": {
+            "type": "number",
+            "format": "double"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuizQuestionScoreResponse"
+            }
+          }
+        },
+        "required": [
+          "quizId",
+          "totalQuestions",
+          "correctAnswers",
+          "score",
           "questions"
         ]
       },
@@ -1070,6 +1160,71 @@
           },
           "404": {
             "description": "Quiz or dialog not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quiz/{quizId}/score": {
+      "post": {
+        "summary": "Score submitted quiz answers",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "quizId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizScoreRequest"
+              },
+              "example": {
+                "answers": [
+                  {
+                    "questionId": 1,
+                    "answer": "Language"
+                  },
+                  {
+                    "questionId": 2,
+                    "answer": "Operating system"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Quiz scored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizScoreResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quiz not found",
             "content": {
               "application/json": {
                 "schema": {

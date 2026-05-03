@@ -10,7 +10,10 @@ import com.VLmb.ai_tutor_backend.feature.dialog.domain.Dialog;
 import com.VLmb.ai_tutor_backend.feature.dialog.domain.Message;
 import com.VLmb.ai_tutor_backend.feature.dialog.infra.DialogRepository;
 import com.VLmb.ai_tutor_backend.feature.dialog.infra.MessageRepository;
+import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizAnswerRequest;
 import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizResponse;
+import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizScoreRequest;
+import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizScoreResponse;
 import com.VLmb.ai_tutor_backend.feature.quiz.infra.QuizRepository;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import org.junit.jupiter.api.AfterEach;
@@ -30,6 +33,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
+import java.util.List;
+
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
@@ -47,6 +52,7 @@ class QuizIntegrationTest {
     private static final String AUTH_REGISTER = "/api/auth/register";
     private static final String AUTH_LOGIN = "/api/auth/login";
     private static final String CREATE_QUIZ = "/api/quiz?dialogId=%d";
+    private static final String SCORE_QUIZ = "/api/quiz/%d/score";
     private static final String RAG_TEST = "/test";
 
     @RegisterExtension
@@ -131,8 +137,11 @@ class QuizIntegrationTest {
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
+        assertNotNull(response.getBody().id());
         assertEquals("Java Basics", response.getBody().testName());
         assertEquals(2, response.getBody().questions().size());
+        assertNotNull(response.getBody().questions().get(0).id());
+        assertNotNull(response.getBody().questions().get(1).id());
         assertEquals(1, quizRepository.count());
 
         var savedQuiz = quizRepository.findByDialogIdOrderByCreatedAtDesc(dialogId).getFirst();
@@ -147,6 +156,44 @@ class QuizIntegrationTest {
                 .withRequestBody(matchingJsonPath("$.dialogMessages[0].message", equalTo("What is Java?")))
                 .withRequestBody(matchingJsonPath("$.dialogMessages[1].role", equalTo("BOT")))
                 .withRequestBody(matchingJsonPath("$.dialogMessages[1].message", equalTo("Java is a programming language."))));
+    }
+
+    @Test
+    void shouldScoreQuizAnswers() {
+        stubGenerateQuizSuccess();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(accessToken);
+
+        ResponseEntity<QuizResponse> createResponse = restTemplate.exchange(
+                CREATE_QUIZ.formatted(dialogId),
+                HttpMethod.POST,
+                new HttpEntity<>(headers),
+                QuizResponse.class
+        );
+
+        assertEquals(HttpStatus.CREATED, createResponse.getStatusCode());
+        assertNotNull(createResponse.getBody());
+
+        QuizScoreRequest scoreRequest = new QuizScoreRequest(List.of(
+                new QuizAnswerRequest(createResponse.getBody().questions().get(0).id(), "Language"),
+                new QuizAnswerRequest(createResponse.getBody().questions().get(1).id(), "Operating system")
+        ));
+
+        ResponseEntity<QuizScoreResponse> scoreResponse = restTemplate.exchange(
+                SCORE_QUIZ.formatted(createResponse.getBody().id()),
+                HttpMethod.POST,
+                new HttpEntity<>(scoreRequest, headers),
+                QuizScoreResponse.class
+        );
+
+        assertEquals(HttpStatus.OK, scoreResponse.getStatusCode());
+        assertNotNull(scoreResponse.getBody());
+        assertEquals(createResponse.getBody().id(), scoreResponse.getBody().quizId());
+        assertEquals(2, scoreResponse.getBody().totalQuestions());
+        assertEquals(1, scoreResponse.getBody().correctAnswers());
+        assertEquals(0.5, scoreResponse.getBody().score());
     }
 
     private String registerAndLoginUser(String username, String email, String password) {

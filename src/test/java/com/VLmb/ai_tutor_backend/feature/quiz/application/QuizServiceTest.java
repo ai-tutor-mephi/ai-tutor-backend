@@ -3,17 +3,21 @@ package com.VLmb.ai_tutor_backend.feature.quiz.application;
 import com.VLmb.ai_tutor_backend.feature.auth.domain.User;
 import com.VLmb.ai_tutor_backend.feature.dialog.domain.Dialog;
 import com.VLmb.ai_tutor_backend.feature.dialog.infra.DialogRepository;
-import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizQuestionResponse;
+import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizAnswerRequest;
 import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizResponse;
+import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizScoreRequest;
+import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizScoreResponse;
 import com.VLmb.ai_tutor_backend.feature.quiz.domain.Quiz;
+import com.VLmb.ai_tutor_backend.feature.quiz.domain.QuizQuestion;
 import com.VLmb.ai_tutor_backend.feature.quiz.infra.QuizRepository;
+import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQuizQuestionResponse;
+import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQuizResponse;
 import com.VLmb.ai_tutor_backend.feature.rag.application.RagCommunicationService;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.core.task.SyncTaskExecutor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -23,7 +27,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -65,9 +69,9 @@ class QuizServiceTest {
 
     @Test
     void shouldCreateQuizAsyncForDialog() {
-        QuizResponse generatedQuiz = new QuizResponse(
+        RagQuizResponse generatedQuiz = new RagQuizResponse(
                 "Quiz 1",
-                List.of(new QuizQuestionResponse("Q1", List.of("A", "B"), "A"))
+                List.of(new RagQuizQuestionResponse("Q1", List.of("A", "B"), "A"))
         );
 
         when(dialogRepository.findById(10L)).thenReturn(Optional.of(dialog));
@@ -76,6 +80,7 @@ class QuizServiceTest {
 
         QuizResponse saved = quizService.createQuizAsync(10L, owner).join();
 
+        assertNull(saved.id());
         assertEquals("Quiz 1", saved.testName());
         assertEquals(1, saved.questions().size());
         verify(ragCommunicationService).generateQuizAsync(10L);
@@ -84,9 +89,9 @@ class QuizServiceTest {
 
     @Test
     void shouldCreateQuizForDialog() {
-        QuizResponse generatedQuiz = new QuizResponse(
+        RagQuizResponse generatedQuiz = new RagQuizResponse(
                 "Quiz 1",
-                List.of(new QuizQuestionResponse("Q1", List.of("A", "B"), "A"))
+                List.of(new RagQuizQuestionResponse("Q1", List.of("A", "B"), "A"))
         );
 
         when(dialogRepository.findById(10L)).thenReturn(Optional.of(dialog));
@@ -97,7 +102,7 @@ class QuizServiceTest {
 
         assertEquals("Quiz 1", saved.testName());
         assertEquals(1, saved.questions().size());
-        assertEquals("A", saved.questions().get(0).goldAnswer());
+        assertEquals("Q1", saved.questions().get(0).question());
         verify(ragCommunicationService).generateQuiz(10L);
         verify(quizRepository).save(any(Quiz.class));
     }
@@ -115,6 +120,7 @@ class QuizServiceTest {
 
         QuizResponse actual = quizService.getQuiz(10L, 100L, owner);
 
+        assertEquals(100L, actual.id());
         assertEquals("Quiz 1", actual.testName());
     }
 
@@ -132,6 +138,50 @@ class QuizServiceTest {
 
         assertEquals(2, actual.size());
         assertEquals("Quiz 1", actual.get(0).testName());
+    }
+
+    @Test
+    void shouldScoreQuizByQuestionAnswers() {
+        Quiz quiz = new Quiz();
+        quiz.setId(100L);
+        quiz.setDialog(dialog);
+        quiz.setTestName("Quiz 1");
+
+        QuizQuestion firstQuestion = new QuizQuestion();
+        firstQuestion.setId(1L);
+        firstQuestion.setQuiz(quiz);
+        firstQuestion.setQuestion("Q1");
+        firstQuestion.setVariants(List.of("A", "B"));
+        firstQuestion.setGoldAnswer("A");
+        firstQuestion.setQuestionOrder(1);
+
+        QuizQuestion secondQuestion = new QuizQuestion();
+        secondQuestion.setId(2L);
+        secondQuestion.setQuiz(quiz);
+        secondQuestion.setQuestion("Q2");
+        secondQuestion.setVariants(List.of("C", "D"));
+        secondQuestion.setGoldAnswer("D");
+        secondQuestion.setQuestionOrder(2);
+
+        quiz.setQuestions(List.of(firstQuestion, secondQuestion));
+
+        when(quizRepository.findByIdWithQuestions(100L)).thenReturn(Optional.of(quiz));
+
+        QuizScoreResponse actual = quizService.scoreQuiz(
+                100L,
+                new QuizScoreRequest(List.of(
+                        new QuizAnswerRequest(1L, "A"),
+                        new QuizAnswerRequest(2L, "C")
+                )),
+                owner
+        );
+
+        assertEquals(100L, actual.quizId());
+        assertEquals(2, actual.totalQuestions());
+        assertEquals(1, actual.correctAnswers());
+        assertEquals(0.5, actual.score());
+        assertEquals(true, actual.questions().get(0).correct());
+        assertEquals(false, actual.questions().get(1).correct());
     }
 
     @Test

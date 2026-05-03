@@ -1,13 +1,12 @@
-package com.VLmb.ai_tutor_backend.feature.quiz.api.dto;
+package com.VLmb.ai_tutor_backend.feature.rag.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-public record QuizResponse(
-        Long id,
+public record RagQuizResponse(
         @JsonProperty("test_name")
         String testName,
-        List<QuizQuestionResponse> questions
+        List<RagQuizQuestionResponse> questions
 ) {
 }
