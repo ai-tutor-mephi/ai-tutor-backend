@@ -41,17 +41,18 @@ public class QuizService {
     private final TaskExecutor dbExecutor;
 
     @Transactional
-    public QuizResponse createQuiz(Long dialogId, User currentUser) {
+    public QuizResponse createQuiz(Long dialogId, Integer questionsCount, User currentUser) {
         Dialog dialog = getDialog(dialogId);
         assertDialogOwner(dialog, currentUser);
 
         log.info(
-                "event=quiz_create_start dialog_id={} user_id={}",
+                "event=quiz_create_start dialog_id={} user_id={} questions_count={}",
                 dialogId,
-                currentUser.getId()
+                currentUser.getId(),
+                questionsCount
         );
 
-        RagQuizResponse generatedQuiz = ragCommunicationService.generateQuiz(dialogId);
+        RagQuizResponse generatedQuiz = ragCommunicationService.generateQuiz(dialogId, questionsCount);
         Quiz savedQuiz = quizRepository.save(toEntity(generatedQuiz, dialog));
 
         log.info(
@@ -64,17 +65,18 @@ public class QuizService {
         return toDto(savedQuiz);
     }
 
-    public CompletableFuture<QuizResponse> createQuizAsync(Long dialogId, User currentUser) {
+    public CompletableFuture<QuizResponse> createQuizAsync(Long dialogId, Integer questionsCount, User currentUser) {
         Dialog dialog = getDialog(dialogId);
         assertDialogOwner(dialog, currentUser);
 
         log.info(
-                "event=quiz_create_async_start dialog_id={} user_id={}",
+                "event=quiz_create_async_start dialog_id={} user_id={} questions_count={}",
                 dialogId,
-                currentUser.getId()
+                currentUser.getId(),
+                questionsCount
         );
 
-        return ragCommunicationService.generateQuizAsync(dialogId)
+        return ragCommunicationService.generateQuizAsync(dialogId, questionsCount)
                 .thenApplyAsync(generatedQuiz -> {
                     Quiz savedQuiz = quizRepository.save(toEntity(generatedQuiz, dialog));
                     log.info(

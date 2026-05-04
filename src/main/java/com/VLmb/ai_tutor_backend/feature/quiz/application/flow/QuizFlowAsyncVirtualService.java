@@ -17,7 +17,7 @@ public class QuizFlowAsyncVirtualService implements QuizFlowService {
     private final QuizService quizService;
 
     @Override
-    public CompletableFuture<QuizResponse> createQuiz(Long dialogId, User user) {
-        return quizService.createQuizAsync(dialogId, user);
+    public CompletableFuture<QuizResponse> createQuiz(Long dialogId, Integer questionsCount, User user) {
+        return quizService.createQuizAsync(dialogId, questionsCount, user);
     }
 }

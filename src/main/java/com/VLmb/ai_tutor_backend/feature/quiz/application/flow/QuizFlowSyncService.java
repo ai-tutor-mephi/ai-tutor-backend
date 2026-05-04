@@ -17,9 +17,9 @@ public class QuizFlowSyncService implements QuizFlowService {
     private final QuizService quizService;
 
     @Override
-    public CompletableFuture<QuizResponse> createQuiz(Long dialogId, User user) {
+    public CompletableFuture<QuizResponse> createQuiz(Long dialogId, Integer questionsCount, User user) {
         try {
-            return CompletableFuture.completedFuture(quizService.createQuiz(dialogId, user));
+            return CompletableFuture.completedFuture(quizService.createQuiz(dialogId, questionsCount, user));
         } catch (Exception ex) {
             return CompletableFuture.failedFuture(ex);
         }

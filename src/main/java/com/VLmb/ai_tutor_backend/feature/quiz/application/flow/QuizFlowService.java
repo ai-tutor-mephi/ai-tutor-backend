@@ -7,5 +7,5 @@ import java.util.concurrent.CompletableFuture;
 
 public interface QuizFlowService {
 
-    CompletableFuture<QuizResponse> createQuiz(Long dialogId, User user);
+    CompletableFuture<QuizResponse> createQuiz(Long dialogId, Integer questionsCount, User user);
 }

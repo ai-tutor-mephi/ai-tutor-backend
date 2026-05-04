@@ -63,25 +63,25 @@ public class RagCommunicationService {
         return ragRestClient.sendMessageAsync(request).orTimeout(QUERY_TIMEOUT, TimeUnit.SECONDS);
     }
 
-    public RagQuizResponse generateQuiz(Long dialogId) {
+    public RagQuizResponse generateQuiz(Long dialogId, Integer questionsCount) {
         List<DialogMessageResponse> dialogMessages = messageRepository.findByDialogIdOrderByCreatedAt(dialogId)
                 .stream()
                 .map(message -> new DialogMessageResponse(message.getContent(), message.getRole()))
                 .toList();
 
-        return ragRestClient.generateQuiz(new RagQuizRequest(
+        return ragRestClient.generateQuiz(questionsCount, new RagQuizRequest(
                 dialogId.toString(),
                 dialogMessages
         ));
     }
 
-    public CompletableFuture<RagQuizResponse> generateQuizAsync(Long dialogId) {
+    public CompletableFuture<RagQuizResponse> generateQuizAsync(Long dialogId, Integer questionsCount) {
         List<DialogMessageResponse> dialogMessages = messageRepository.findByDialogIdOrderByCreatedAt(dialogId)
                 .stream()
                 .map(message -> new DialogMessageResponse(message.getContent(), message.getRole()))
                 .toList();
 
-        return ragRestClient.generateQuizAsync(new RagQuizRequest(
+        return ragRestClient.generateQuizAsync(questionsCount, new RagQuizRequest(
                 dialogId.toString(),
                 dialogMessages
         ));

@@ -11,8 +11,8 @@ import java.util.concurrent.CompletableFuture;
 public interface RagRestClient {
     SendMessageResponse sendMessage(RagQueryRequest ragRequest);
     CompletableFuture<SendMessageResponse> sendMessageAsync(RagQueryRequest ragRequest);
-    RagQuizResponse generateQuiz(RagQuizRequest request);
-    CompletableFuture<RagQuizResponse> generateQuizAsync(RagQuizRequest request);
+    RagQuizResponse generateQuiz(Integer questionsCount, RagQuizRequest request);
+    CompletableFuture<RagQuizResponse> generateQuizAsync(Integer questionsCount, RagQuizRequest request);
     void loadFile(RagLoadFilesRequest request);
     CompletableFuture<Void> loadFileAsync(RagLoadFilesRequest request);
 }

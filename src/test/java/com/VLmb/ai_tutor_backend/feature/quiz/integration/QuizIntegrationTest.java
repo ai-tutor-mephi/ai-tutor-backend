@@ -51,9 +51,9 @@ class QuizIntegrationTest {
 
     private static final String AUTH_REGISTER = "/api/auth/register";
     private static final String AUTH_LOGIN = "/api/auth/login";
-    private static final String CREATE_QUIZ = "/api/quiz?dialogId=%d";
+    private static final String CREATE_QUIZ = "/api/quiz?dialogId=%d&questionsCount=%d";
     private static final String SCORE_QUIZ = "/api/quiz/%d/score";
-    private static final String RAG_TEST = "/test";
+    private static final String RAG_TEST = "/tests/2";
 
     @RegisterExtension
     static WireMockExtension wireMock = WireMockExtension.newInstance()
@@ -129,7 +129,7 @@ class QuizIntegrationTest {
         headers.setBearerAuth(accessToken);
 
         ResponseEntity<QuizResponse> response = restTemplate.exchange(
-                CREATE_QUIZ.formatted(dialogId),
+                CREATE_QUIZ.formatted(dialogId, 2),
                 HttpMethod.POST,
                 new HttpEntity<>(headers),
                 QuizResponse.class
@@ -167,7 +167,7 @@ class QuizIntegrationTest {
         headers.setBearerAuth(accessToken);
 
         ResponseEntity<QuizResponse> createResponse = restTemplate.exchange(
-                CREATE_QUIZ.formatted(dialogId),
+                CREATE_QUIZ.formatted(dialogId, 2),
                 HttpMethod.POST,
                 new HttpEntity<>(headers),
                 QuizResponse.class

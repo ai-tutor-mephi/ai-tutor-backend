@@ -18,11 +18,11 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class RagRestClientImpl implements RagRestClient {
 
-    public static final int LOAD_FILE_TIMEOUT = 30;
+    public static final int LOAD_FILE_TIMEOUT = 300;
     private final RestClient client;
     private final TaskExecutor ragExecutor;
     private static final String SEND_MESSAGE_PATH = "/query";
-    private static final String GENERATE_TEST_PATH = "/test";
+    private static final String GENERATE_TEST_PATH = "/tests";
     private static final String LOAD_FILES_PATH = "/load";
 
     public RagRestClientImpl(RestClient ragRestClient, @Qualifier("ragExecutor") TaskExecutor ragExecutor) {
@@ -54,15 +54,16 @@ public class RagRestClientImpl implements RagRestClient {
     }
 
     @Override
-    public RagQuizResponse generateQuiz(RagQuizRequest request) {
+    public RagQuizResponse generateQuiz(Integer questionsCount, RagQuizRequest request) {
         log.info(
-                "event=rag_generate_quiz_request dialog_id={} message_count={}",
+                "event=rag_generate_quiz_request dialog_id={} message_count={} questions_count={}",
                 request.dialogId(),
-                request.dialogMessages() == null ? 0 : request.dialogMessages().size()
+                request.dialogMessages() == null ? 0 : request.dialogMessages().size(),
+                questionsCount
         );
 
         return client.post()
-                .uri(GENERATE_TEST_PATH)
+                .uri(GENERATE_TEST_PATH + "/{questionsCount}", questionsCount)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(request)
@@ -71,8 +72,8 @@ public class RagRestClientImpl implements RagRestClient {
     }
 
     @Override
-    public CompletableFuture<RagQuizResponse> generateQuizAsync(RagQuizRequest request) {
-        return CompletableFuture.supplyAsync(() -> generateQuiz(request), ragExecutor);
+    public CompletableFuture<RagQuizResponse> generateQuizAsync(Integer questionsCount, RagQuizRequest request) {
+        return CompletableFuture.supplyAsync(() -> generateQuiz(questionsCount, request), ragExecutor);
     }
 
     // TODO: Add retries and richer error handling for RAG file upload if needed.

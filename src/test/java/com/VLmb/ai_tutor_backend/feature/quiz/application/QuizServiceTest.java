@@ -75,15 +75,15 @@ class QuizServiceTest {
         );
 
         when(dialogRepository.findById(10L)).thenReturn(Optional.of(dialog));
-        when(ragCommunicationService.generateQuizAsync(10L)).thenReturn(CompletableFuture.completedFuture(generatedQuiz));
+        when(ragCommunicationService.generateQuizAsync(10L, 3)).thenReturn(CompletableFuture.completedFuture(generatedQuiz));
         when(quizRepository.save(any(Quiz.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        QuizResponse saved = quizService.createQuizAsync(10L, owner).join();
+        QuizResponse saved = quizService.createQuizAsync(10L, 3, owner).join();
 
         assertNull(saved.id());
         assertEquals("Quiz 1", saved.testName());
         assertEquals(1, saved.questions().size());
-        verify(ragCommunicationService).generateQuizAsync(10L);
+        verify(ragCommunicationService).generateQuizAsync(10L, 3);
         verify(quizRepository).save(any(Quiz.class));
     }
 
@@ -95,15 +95,15 @@ class QuizServiceTest {
         );
 
         when(dialogRepository.findById(10L)).thenReturn(Optional.of(dialog));
-        when(ragCommunicationService.generateQuiz(10L)).thenReturn(generatedQuiz);
+        when(ragCommunicationService.generateQuiz(10L, 3)).thenReturn(generatedQuiz);
         when(quizRepository.save(any(Quiz.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        QuizResponse saved = quizService.createQuiz(10L, owner);
+        QuizResponse saved = quizService.createQuiz(10L, 3, owner);
 
         assertEquals("Quiz 1", saved.testName());
         assertEquals(1, saved.questions().size());
         assertEquals("Q1", saved.questions().get(0).question());
-        verify(ragCommunicationService).generateQuiz(10L);
+        verify(ragCommunicationService).generateQuiz(10L, 3);
         verify(quizRepository).save(any(Quiz.class));
     }
 

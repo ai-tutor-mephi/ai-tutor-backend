@@ -1049,6 +1049,16 @@
               "type": "integer",
               "format": "int64"
             }
+          },
+          {
+            "name": "questionsCount",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Number of questions to generate in the quiz. The same value is forwarded to RAG as a path variable."
           }
         ],
         "responses": {
