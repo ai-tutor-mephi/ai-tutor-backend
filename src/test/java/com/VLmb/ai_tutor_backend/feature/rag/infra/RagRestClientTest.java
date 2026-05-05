@@ -11,13 +11,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -44,13 +42,7 @@ class RagRestClientTest {
 
     @BeforeEach
     void setUp() {
-        TaskExecutor directExecutor = new TaskExecutor() {
-            @Override
-            public void execute(Runnable task) {
-                task.run();
-            }
-        };
-        ragRestClient = new RagRestClientImpl(restClient, directExecutor);
+        ragRestClient = new RagRestClientImpl(restClient);
 
         ragQueryRequest = new RagQueryRequest(
                 "42",
@@ -73,20 +65,6 @@ class RagRestClientTest {
         SendMessageResponse actual = ragRestClient.sendMessage(ragQueryRequest);
 
         assertSame(expected, actual);
-        verify(requestBodySpec).body(ragQueryRequest);
-        verify(responseSpec).body(SendMessageResponse.class);
-    }
-
-    @Test
-    void shouldSendMessageAsync() {
-        SendMessageResponse expected = new SendMessageResponse("async answer");
-        stubPostChain("/query");
-        when(responseSpec.body(SendMessageResponse.class)).thenReturn(expected);
-
-        CompletableFuture<SendMessageResponse> future = ragRestClient.sendMessageAsync(ragQueryRequest);
-        SendMessageResponse actual = future.join();
-
-        assertEquals("async answer", actual.answer());
         verify(requestBodySpec).body(ragQueryRequest);
         verify(responseSpec).body(SendMessageResponse.class);
     }

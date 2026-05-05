@@ -18,8 +18,6 @@ import com.VLmb.ai_tutor_backend.feature.rag.application.RagCommunicationService
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,7 +25,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
@@ -37,8 +34,6 @@ public class QuizService {
     private final QuizRepository quizRepository;
     private final DialogRepository dialogRepository;
     private final RagCommunicationService ragCommunicationService;
-    @Qualifier("dbExecutor")
-    private final TaskExecutor dbExecutor;
 
     @Transactional
     public QuizResponse createQuiz(Long dialogId, Integer questionsCount, User currentUser) {
@@ -63,30 +58,6 @@ public class QuizService {
         );
 
         return toDto(savedQuiz);
-    }
-
-    public CompletableFuture<QuizResponse> createQuizAsync(Long dialogId, Integer questionsCount, User currentUser) {
-        Dialog dialog = getDialog(dialogId);
-        assertDialogOwner(dialog, currentUser);
-
-        log.info(
-                "event=quiz_create_async_start dialog_id={} user_id={} questions_count={}",
-                dialogId,
-                currentUser.getId(),
-                questionsCount
-        );
-
-        return ragCommunicationService.generateQuizAsync(dialogId, questionsCount)
-                .thenApplyAsync(generatedQuiz -> {
-                    Quiz savedQuiz = quizRepository.save(toEntity(generatedQuiz, dialog));
-                    log.info(
-                            "event=quiz_create_async_success dialog_id={} user_id={} question_count={}",
-                            dialogId,
-                            currentUser.getId(),
-                            savedQuiz.getQuestions().size()
-                    );
-                    return toDto(savedQuiz);
-                }, dbExecutor);
     }
 
     @Transactional(readOnly = true)

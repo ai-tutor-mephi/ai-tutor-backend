@@ -53,7 +53,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({"test", "virtual"})
+@ActiveProfiles("test")
 class DialogFlowIntegrationTest {
 
     private static final String AUTH_REGISTER = "/api/auth/register";

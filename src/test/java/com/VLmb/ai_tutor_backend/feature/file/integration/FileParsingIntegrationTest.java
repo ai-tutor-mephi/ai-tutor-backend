@@ -23,7 +23,7 @@ import java.io.IOException;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@ActiveProfiles({"test", "virtual"})
+@ActiveProfiles("test")
 @TestPropertySource(properties = {
         "clients.rag.base-url=http://localhost:8089"
 })

@@ -27,14 +27,11 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -52,8 +49,6 @@ public class DialogServiceTest {
     private FileStorageService fileStorageService;
     @Mock
     private RagCommunicationService ragCommunicationService;
-    @Mock
-    private ThreadPoolTaskExecutor dbExecutor;
     @Mock
     private MessageRepository messageRepository;
 
@@ -280,130 +275,16 @@ public class DialogServiceTest {
     }
 
     @Test
-    public void shouldCompleteSuccessfullyWhenAllAsyncUploadsSucceed() throws Exception {
-        when(dialogRepository.findById(100L)).thenReturn(Optional.of(testDialog));
-
-        MockMultipartFile file1 = new MockMultipartFile("files", "doc1.pdf", "application/pdf", "some content 1".getBytes());
-        MockMultipartFile file2 = new MockMultipartFile("files", "doc2.pdf", "application/pdf", "some content 2".getBytes());
-
-        FileMetadata savedFile1 = new FileMetadata();
-        savedFile1.setId(501L);
-        savedFile1.setOriginalFileName("doc1.pdf");
-
-        FileMetadata savedFile2 = new FileMetadata();
-        savedFile2.setId(502L);
-        savedFile2.setOriginalFileName("doc2.pdf");
-
-        when(fileMetadataRepository.save(any(FileMetadata.class)))
-                .thenReturn(savedFile1)
-                .thenReturn(savedFile2);
-
-        when(ragCommunicationService.loadFileToRagAsync(eq(100L), anyList()))
-                .thenReturn(CompletableFuture.completedFuture(null));
-
-        FileParser mockParser = mock(FileParser.class);
-        when(mockParser.parse(file1)).thenReturn("Text 1");
-        when(mockParser.parse(file2)).thenReturn("Text 2");
-
-        try(MockedStatic<FileParserFactory> mockedFactory = mockStatic(FileParserFactory.class)) {
-            mockedFactory.when(() -> FileParserFactory.getParser(ExtensionsEnum.PDF))
-                    .thenReturn(mockParser);
-
-            CompletableFuture<List<DialogFileResponse>> futureResult = dialogService.addFilesToDialogAsync(
-                    100L,
-                    testUser,
-                    new MultipartFile[]{file1, file2}
-            );
-
-            List<DialogFileResponse> responses = futureResult.join();
-
-            assertEquals(2, responses.size());
-            assertEquals(501L, responses.get(0).fileId());
-            assertEquals(502L, responses.get(1).fileId());
-
-            verify(fileStorageService, times(2)).uploadFile(anyString(), any(), anyLong());
-            verify(fileMetadataRepository, times(2)).save(any(FileMetadata.class));
-
-            verify(ragCommunicationService, times(2)).loadFileToRagAsync(eq(100L), anyList());
-        }
-    }
-
-    @Test
-    public void shouldRollbackCompletedFilesWhenOneAsyncUploadFails() throws IOException {
-        when(dialogRepository.findById(100L)).thenReturn(Optional.of(testDialog));
-
-        MockMultipartFile file1 = new MockMultipartFile("files", "doc1.pdf", "application/pdf", "some content 1".getBytes());
-        MockMultipartFile file2 = new MockMultipartFile("files", "doc2.pdf", "application/pdf", "some content 2".getBytes());
-
-        FileMetadata savedFile1 = new FileMetadata();
-        savedFile1.setId(501L);
-        savedFile1.setOriginalFileName("doc1.pdf");
-        savedFile1.setStorageFileName("uuid-1.pdf");
-
-        FileMetadata savedFile2 = new FileMetadata();
-        savedFile2.setId(502L);
-        savedFile2.setOriginalFileName("doc2.pdf");
-        savedFile2.setStorageFileName("uuid-2.pdf");
-
-        FileParser mockParser = mock(FileParser.class);
-        when(mockParser.parse(file1)).thenReturn("Text 1");
-        when(mockParser.parse(file2)).thenReturn("Text 2");
-
-        when(fileMetadataRepository.save(any(FileMetadata.class)))
-                .thenReturn(savedFile1)
-                .thenReturn(savedFile2);
-
-        RuntimeException ragError = new RuntimeException("RAG Error");
-        when(ragCommunicationService.loadFileToRagAsync(eq(100L), anyList()))
-                .thenReturn(CompletableFuture.completedFuture(null))
-                .thenReturn(CompletableFuture.failedFuture(ragError));
-
-        try(MockedStatic<FileParserFactory> mockedStatic = mockStatic(FileParserFactory.class)) {
-            mockedStatic.when(() -> FileParserFactory.getParser(ExtensionsEnum.PDF))
-                    .thenReturn(mockParser);
-
-            CompletableFuture<List<DialogFileResponse>> futureResult = dialogService.addFilesToDialogAsync(
-                    100L,
-                    testUser,
-                    new MultipartFile[]{file1, file2}
-            );
-
-            CompletionException thrown = assertThrows(CompletionException.class, futureResult::join);
-            assertEquals(ragError, thrown.getCause());
-
-            verify(fileStorageService, times(2)).uploadFile(anyString(), any(), anyLong());
-            verify(fileMetadataRepository, times(2)).save(any(FileMetadata.class));
-            verify(ragCommunicationService, times(2)).loadFileToRagAsync(eq(100L), anyList());
-
-            verify(fileMetadataRepository, times(1)).deleteById(502L);
-            verify(fileMetadataRepository, times(1)).deleteById(501L);
-
-            verify(fileStorageService, times(2)).deleteFile(anyString());
-        }
-
-    }
-
-    @Test
-    void shouldCompleteSendQuestionAsyncWhenRagReturnsAnswer() throws Exception {
+    void shouldSendQuestionWhenRagReturnsAnswer() throws Exception {
         when(dialogRepository.findById(100L)).thenReturn(Optional.of(testDialog));
 
         SendMessageRequest request = new SendMessageRequest("Как работает Project Loom?");
         SendMessageResponse expectedResponse = new SendMessageResponse("Это виртуальные потоки...");
 
-        when(ragCommunicationService.sendQuestionToRagAsync(eq(100L), any(Message.class)))
-                .thenReturn(CompletableFuture.completedFuture(expectedResponse));
+        when(ragCommunicationService.sendQuestionToRag(eq(100L), any(Message.class)))
+                .thenReturn(expectedResponse);
 
-        doAnswer(invocation -> {
-            Runnable task = invocation.getArgument(0);
-            task.run();
-            return null;
-        }).when(dbExecutor).execute(any(Runnable.class));
-
-        CompletableFuture<SendMessageResponse> futureResult = dialogService.sendQuestionAsync(
-                request, testUser, 100L
-        );
-
-        SendMessageResponse actualResponse = futureResult.join();
+        SendMessageResponse actualResponse = dialogService.sendQuestion(request, testUser, 100L);
 
         assertEquals("Это виртуальные потоки...", actualResponse.answer());
 
@@ -425,7 +306,6 @@ public class DialogServiceTest {
         assertEquals(100L, savedAnswer.getDialog().getId());
     }
 }
-
 
 
 

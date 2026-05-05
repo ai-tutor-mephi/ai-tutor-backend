@@ -6,13 +6,8 @@ import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQuizRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQuizResponse;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQueryRequest;
 
-import java.util.concurrent.CompletableFuture;
-
 public interface RagRestClient {
     SendMessageResponse sendMessage(RagQueryRequest ragRequest);
-    CompletableFuture<SendMessageResponse> sendMessageAsync(RagQueryRequest ragRequest);
     RagQuizResponse generateQuiz(Integer questionsCount, RagQuizRequest request);
-    CompletableFuture<RagQuizResponse> generateQuizAsync(Integer questionsCount, RagQuizRequest request);
     void loadFile(RagLoadFilesRequest request);
-    CompletableFuture<Void> loadFileAsync(RagLoadFilesRequest request);
 }

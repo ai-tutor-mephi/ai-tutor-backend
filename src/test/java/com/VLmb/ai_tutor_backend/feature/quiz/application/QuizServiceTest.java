@@ -17,13 +17,11 @@ import com.VLmb.ai_tutor_backend.shared.error.exceptions.ResourceNotFoundExcepti
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.core.task.SyncTaskExecutor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -55,8 +53,7 @@ class QuizServiceTest {
         quizService = new QuizService(
                 quizRepository,
                 dialogRepository,
-                ragCommunicationService,
-                new SyncTaskExecutor()
+                ragCommunicationService
         );
 
         owner = new User();
@@ -65,26 +62,6 @@ class QuizServiceTest {
         dialog = new Dialog();
         dialog.setId(10L);
         dialog.setOwner(owner);
-    }
-
-    @Test
-    void shouldCreateQuizAsyncForDialog() {
-        RagQuizResponse generatedQuiz = new RagQuizResponse(
-                "Quiz 1",
-                List.of(new RagQuizQuestionResponse("Q1", List.of("A", "B"), "A"))
-        );
-
-        when(dialogRepository.findById(10L)).thenReturn(Optional.of(dialog));
-        when(ragCommunicationService.generateQuizAsync(10L, 3)).thenReturn(CompletableFuture.completedFuture(generatedQuiz));
-        when(quizRepository.save(any(Quiz.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        QuizResponse saved = quizService.createQuizAsync(10L, 3, owner).join();
-
-        assertNull(saved.id());
-        assertEquals("Quiz 1", saved.testName());
-        assertEquals(1, saved.questions().size());
-        verify(ragCommunicationService).generateQuizAsync(10L, 3);
-        verify(quizRepository).save(any(Quiz.class));
     }
 
     @Test
@@ -100,6 +77,7 @@ class QuizServiceTest {
 
         QuizResponse saved = quizService.createQuiz(10L, 3, owner);
 
+        assertNull(saved.id());
         assertEquals("Quiz 1", saved.testName());
         assertEquals(1, saved.questions().size());
         assertEquals("Q1", saved.questions().get(0).question());

@@ -1,8 +1,9 @@
 spring:
   application:
     name: ai-tutor-backend
-  profiles:
-    default: platform
+  threads:
+    virtual:
+      enabled: true
   datasource:
     url: jdbc:postgresql://db:5432/ai_tutor_db
     userName: tutor_user

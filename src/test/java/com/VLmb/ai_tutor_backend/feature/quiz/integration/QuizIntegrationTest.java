@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({"test", "virtual"})
+@ActiveProfiles("test")
 class QuizIntegrationTest {
 
     private static final String AUTH_REGISTER = "/api/auth/register";

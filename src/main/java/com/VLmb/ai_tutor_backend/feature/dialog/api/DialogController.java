@@ -8,7 +8,6 @@ import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.CreateDialogResponse;
 import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.SendMessageRequest;
 import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.SendMessageResponse;
 import com.VLmb.ai_tutor_backend.feature.dialog.application.DialogService;
-import com.VLmb.ai_tutor_backend.feature.dialog.application.flow.DialogFlowService;
 import com.VLmb.ai_tutor_backend.feature.file.application.DialogFileResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,43 +20,41 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/dialogs")
 @RequiredArgsConstructor
 public class DialogController {
 
-    private final DialogFlowService dialogFlowService;
     private final DialogService dialogService;
 
     @PostMapping(path = "/with-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public CompletableFuture<ResponseEntity<CreateDialogResponse>> createDialogWithFiles(
+    public ResponseEntity<CreateDialogResponse> createDialogWithFiles(
             @AuthenticationPrincipal CustomUserDetails principal,
-            @RequestParam("files") MultipartFile[] files) {
+            @RequestParam("files") MultipartFile[] files) throws IOException {
 
-        return dialogFlowService.createDialogWithFiles(principal.getUser(), files)
-                .thenApply(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
+        CreateDialogResponse response = dialogService.createDialogWithFiles(principal.getUser(), files);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping(path = "/{dialogId}/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public CompletableFuture<ResponseEntity<List<DialogFileResponse>>> addFileToDialog(
+    public ResponseEntity<List<DialogFileResponse>> addFileToDialog(
             @PathVariable Long dialogId,
             @AuthenticationPrincipal CustomUserDetails principal,
-            @RequestParam("files") MultipartFile[] files) {
+            @RequestParam("files") MultipartFile[] files) throws IOException {
 
-        return dialogFlowService.addFilesToDialog(dialogId, principal.getUser(), files)
-                .thenApply(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
+        List<DialogFileResponse> response = dialogService.addFilesToDialog(dialogId, principal.getUser(), files);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping(path = "/{dialogId}/send-question")
-    public CompletableFuture<ResponseEntity<SendMessageResponse>> sendMessageToDialog(
+    public ResponseEntity<SendMessageResponse> sendMessageToDialog(
             @PathVariable Long dialogId,
             @AuthenticationPrincipal CustomUserDetails principal,
-            @RequestBody SendMessageRequest messageRequest) {
+            @RequestBody SendMessageRequest messageRequest) throws IOException {
 
-        return dialogFlowService.sendQuestion(messageRequest, principal.getUser(), dialogId)
-                .thenApply(response -> ResponseEntity.status(HttpStatus.OK).body(response));
+        SendMessageResponse response = dialogService.sendQuestion(messageRequest, principal.getUser(), dialogId);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
 

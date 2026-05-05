@@ -8,14 +8,12 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.util.Timeout;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
 
@@ -64,8 +62,8 @@ public class RagRestClientConfig {
     }
 
     @Bean
-    RagRestClient ragClientApi(RestClient ragRestClient, @Qualifier("ragExecutor") TaskExecutor ragExecutor) {
-        return new RagRestClientImpl(ragRestClient, ragExecutor);
+    RagRestClient ragClientApi(RestClient ragRestClient) {
+        return new RagRestClientImpl(ragRestClient);
     }
 
     private static String safeBody(org.springframework.http.client.ClientHttpResponse response) {

@@ -7,27 +7,19 @@ import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQuizResponse;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQueryRequest;
 import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.SendMessageResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class RagRestClientImpl implements RagRestClient {
 
-    public static final int LOAD_FILE_TIMEOUT = 300;
     private final RestClient client;
-    private final TaskExecutor ragExecutor;
     private static final String SEND_MESSAGE_PATH = "/query";
     private static final String GENERATE_TEST_PATH = "/tests";
     private static final String LOAD_FILES_PATH = "/load";
 
-    public RagRestClientImpl(RestClient ragRestClient, @Qualifier("ragExecutor") TaskExecutor ragExecutor) {
+    public RagRestClientImpl(RestClient ragRestClient) {
         this.client = ragRestClient;
-        this.ragExecutor = ragExecutor;
     }
 
     @Override
@@ -49,11 +41,6 @@ public class RagRestClientImpl implements RagRestClient {
     }
 
     @Override
-    public CompletableFuture<SendMessageResponse> sendMessageAsync(RagQueryRequest ragRequest) {
-        return CompletableFuture.supplyAsync(() -> sendMessage(ragRequest), ragExecutor);
-    }
-
-    @Override
     public RagQuizResponse generateQuiz(Integer questionsCount, RagQuizRequest request) {
         log.info(
                 "event=rag_generate_quiz_request dialog_id={} message_count={} questions_count={}",
@@ -69,11 +56,6 @@ public class RagRestClientImpl implements RagRestClient {
                 .body(request)
                 .retrieve()
                 .body(RagQuizResponse.class);
-    }
-
-    @Override
-    public CompletableFuture<RagQuizResponse> generateQuizAsync(Integer questionsCount, RagQuizRequest request) {
-        return CompletableFuture.supplyAsync(() -> generateQuiz(questionsCount, request), ragExecutor);
     }
 
     // TODO: Add retries and richer error handling for RAG file upload if needed.
@@ -104,9 +86,4 @@ public class RagRestClientImpl implements RagRestClient {
                 .toBodilessEntity();
     }
 
-    @Override
-    public CompletableFuture<Void> loadFileAsync(RagLoadFilesRequest request) {
-        return CompletableFuture.runAsync(() -> loadFile(request), ragExecutor)
-                .orTimeout(LOAD_FILE_TIMEOUT, TimeUnit.SECONDS);
-    }
 }

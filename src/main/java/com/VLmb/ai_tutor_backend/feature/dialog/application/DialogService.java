@@ -25,8 +25,6 @@ import com.VLmb.ai_tutor_backend.shared.error.exceptions.TextExtractionException
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.UnsupportedFileExtension;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,8 +35,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 
 @Service
@@ -57,8 +53,6 @@ public class DialogService {
     private final FileStorageService fileStorageService;
     private final MessageRepository messageRepository;
     private final RagCommunicationService ragCommunicationService;
-    @Qualifier("dbExecutor")
-    private final TaskExecutor dbExecutor;
 
     public CreateDialogResponse createDialogWithFiles(User user, MultipartFile[] files) throws IOException {
         if (files == null || files.length == 0) {
@@ -101,56 +95,6 @@ public class DialogService {
         }
 
         return new CreateDialogResponse(savedDialog.getId(), savedDialog.getTitle());
-    }
-
-    public CompletableFuture<CreateDialogResponse> createDialogWithFilesAsync(User user, MultipartFile[] files) {
-        if (files == null || files.length == 0) {
-            throw new IllegalArgumentException("At least one file must be provided.");
-        }
-
-        log.info(
-                "event=dialog_create_with_files_async_start user_id={} file_count={}",
-                user.getId(),
-                files.length
-        );
-
-        Dialog dialog = new Dialog();
-        dialog.setOwner(user);
-        dialog.setTitle(files[0].getOriginalFilename());
-        Dialog savedDialog = dialogRepository.save(dialog);
-
-        try {
-            return addFilesToDialogAsync(savedDialog.getId(), user, files)
-                    .thenApply(unused -> new CreateDialogResponse(savedDialog.getId(), savedDialog.getTitle()))
-                    .whenComplete((unused, ex) -> {
-                        if (ex != null) {
-                            log.warn(
-                                    "event=dialog_create_with_files_async_failed dialog_id={} user_id={} message={}",
-                                    savedDialog.getId(),
-                                    user.getId(),
-                                    ex.getMessage()
-                            );
-                            cleanupDialogArtifacts(savedDialog);
-                        } else {
-                            log.info(
-                                    "event=dialog_create_with_files_async_success dialog_id={} user_id={} file_count={}",
-                                    savedDialog.getId(),
-                                    user.getId(),
-                                    files.length
-                            );
-                        }
-                    });
-        } catch (RuntimeException ex) {
-            log.warn(
-                    "event=dialog_create_with_files_async_failed dialog_id={} user_id={} message={}",
-                    savedDialog.getId(),
-                    user.getId(),
-                    ex.getMessage(),
-                    ex
-            );
-            cleanupDialogArtifacts(savedDialog);
-            throw ex;
-        }
     }
 
     public List<DialogFileResponse> addFilesToDialog(Long dialogId, User currentUser, MultipartFile[] files) throws IOException {
@@ -215,82 +159,6 @@ public class DialogService {
             cleanupPersistedFile(saved.getId(), storageFileName);
             throw ex;
         }
-    }
-
-    //ToDo: Мб переделать через статусы, помечать в handle что файл битый, а не делать cleanup
-    private CompletableFuture<FileMetadata> addFileToDialogAsync(Dialog dialog, MultipartFile file) throws IOException {
-        ExtensionsEnum parsedExtension = resolveSupportedExtension(file.getOriginalFilename());
-        String extractedText = extractTextOrThrow(file, parsedExtension);
-        String storageFileName = UUID.randomUUID() + "." + parsedExtension.value();
-
-        uploadToStorage(storageFileName, file);
-
-        FileMetadata saved = saveFileMetadata(dialog, file, storageFileName);
-        RagFileRequest ragFile = toRagFileRequest(saved, extractedText);
-
-        return ragCommunicationService.loadFileToRagAsync(dialog.getId(), List.of(ragFile))
-                .handle((unused, ex) -> {
-                    if (ex != null) {
-                        cleanupPersistedFile(saved.getId(), storageFileName);
-                        throw propagateAsyncFailure(ex);
-                    }
-                    return saved;
-                });
-    }
-
-    public CompletableFuture<List<DialogFileResponse>> addFilesToDialogAsync(
-            Long dialogId,
-            User currentUser,
-            MultipartFile[] files
-    ) {
-        if (files == null || files.length == 0) {
-            throw new IllegalArgumentException("At least one file must be provided.");
-        }
-
-        log.info(
-                "event=dialog_add_files_async_start dialog_id={} user_id={} file_count={}",
-                dialogId,
-                currentUser.getId(),
-                files.length
-        );
-
-        Dialog dialog = getDialog(dialogId);
-        assertDialogOwner(dialog, currentUser);
-
-        List<CompletableFuture<FileMetadata>> futures = new ArrayList<>();
-        for (MultipartFile file : files) {
-            try {
-                futures.add(addFileToDialogAsync(dialog, file));
-            } catch (IOException e) {
-                cleanupFiles(completedSuccessfully(futures));
-                throw new FileUploadException("Failed to upload file: " + file.getOriginalFilename(), e);
-            }
-        }
-
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                .handle((unused, ex) -> {
-                    if (ex != null) {
-                        log.warn(
-                                "event=dialog_add_files_async_failed dialog_id={} user_id={} message={}",
-                                dialogId,
-                                currentUser.getId(),
-                                ex.getMessage()
-                        );
-                        cleanupFiles(completedSuccessfully(futures));
-                        throw propagateAsyncFailure(ex);
-                    }
-
-                    log.info(
-                            "event=dialog_add_files_async_success dialog_id={} user_id={} file_count={}",
-                            dialogId,
-                            currentUser.getId(),
-                            files.length
-                    );
-                    return futures.stream()
-                            .map(CompletableFuture::join)
-                            .map(saved -> toFileResponse(saved, dialog.getId()))
-                            .toList();
-                });
     }
 
     private String validateExtension(String filename) {
@@ -391,28 +259,6 @@ public class DialogService {
         }
     }
 
-    private RuntimeException propagateAsyncFailure(Throwable ex) {
-        if (ex instanceof CompletionException completionException && completionException.getCause() != null) {
-            Throwable cause = completionException.getCause();
-            if (cause instanceof RuntimeException runtimeException) {
-                return runtimeException;
-            }
-            return new CompletionException(cause);
-        }
-        if (ex instanceof RuntimeException runtimeException) {
-            return runtimeException;
-        }
-        return new CompletionException(ex);
-    }
-
-    private List<FileMetadata> completedSuccessfully(List<CompletableFuture<FileMetadata>> futures) {
-        return futures.stream()
-                .filter(CompletableFuture::isDone)
-                .filter(future -> !future.isCompletedExceptionally())
-                .map(CompletableFuture::join)
-                .toList();
-    }
-
     @Transactional(readOnly = true)
     public List<DialogFileResponse> getFilesFromDialog(Long dialogId, User currentUser) throws IOException {
         Dialog dialog = getDialog(dialogId);
@@ -455,6 +301,8 @@ public class DialogService {
     }
 
     public SendMessageResponse sendQuestion(SendMessageRequest messageRequest, User currentUser, Long dialogId) throws IOException {
+        Dialog dialog = getDialog(dialogId);
+        assertDialogOwner(dialog, currentUser);
 
         log.info(
                 "event=dialog_send_question_start dialog_id={} user_id={}",
@@ -464,7 +312,7 @@ public class DialogService {
 
         Message question = new Message();
         question.setRole(Message.MessageRole.USER);
-        question.setDialog(getDialog(dialogId));
+        question.setDialog(dialog);
         question.setContent(messageRequest.question());
 
         SendMessageResponse messageResponse = ragCommunicationService.sendQuestionToRag(dialogId, question);
@@ -474,7 +322,7 @@ public class DialogService {
         if (messageResponse.answer() != null) {
             Message answer = new Message();
             answer.setRole(Message.MessageRole.BOT);
-            answer.setDialog(getDialog(dialogId));
+            answer.setDialog(dialog);
             answer.setContent(messageResponse.answer());
             messageRepository.save(answer);
         }
@@ -488,48 +336,6 @@ public class DialogService {
         );
 
         return messageResponse;
-    }
-
-    public CompletableFuture<SendMessageResponse> sendQuestionAsync(
-            SendMessageRequest messageRequest,
-            User currentUser,
-            Long dialogId
-    ) {
-        Dialog dialog = getDialog(dialogId);
-        assertDialogOwner(dialog, currentUser);
-
-        log.info(
-                "event=dialog_send_question_async_start dialog_id={} user_id={}",
-                dialogId,
-                currentUser.getId()
-        );
-
-        Message question = new Message();
-        question.setRole(Message.MessageRole.USER);
-        question.setDialog(dialog);
-        question.setContent(messageRequest.question());
-
-        return ragCommunicationService.sendQuestionToRagAsync(dialogId, question)
-                .thenApplyAsync(messageResponse -> {
-                    messageRepository.save(question);
-
-                    if (messageResponse.answer() != null) {
-                        Message answer = new Message();
-                        answer.setRole(Message.MessageRole.BOT);
-                        answer.setDialog(dialog);
-                        answer.setContent(messageResponse.answer());
-                        messageRepository.save(answer);
-                    }
-
-                    log.info(
-                            "event=dialog_send_question_async_success dialog_id={} user_id={} has_answer={} answer_len={}",
-                            dialogId,
-                            currentUser.getId(),
-                            messageResponse.answer() != null,
-                            messageResponse.answer() == null ? 0 : messageResponse.answer().length()
-                    );
-                    return messageResponse;
-                }, dbExecutor);
     }
 
     public void deleteDialog(Long dialogId, User currentUser) {

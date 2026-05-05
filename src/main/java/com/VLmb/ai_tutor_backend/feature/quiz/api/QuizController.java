@@ -5,7 +5,6 @@ import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizResponse;
 import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizScoreRequest;
 import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizScoreResponse;
 import com.VLmb.ai_tutor_backend.feature.quiz.application.QuizService;
-import com.VLmb.ai_tutor_backend.feature.quiz.application.flow.QuizFlowService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/quiz")
@@ -30,17 +28,16 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class QuizController {
 
-    private final QuizFlowService quizFlowService;
     private final QuizService quizService;
 
     @PostMapping
-    public CompletableFuture<ResponseEntity<QuizResponse>> createQuiz(
+    public ResponseEntity<QuizResponse> createQuiz(
             @RequestParam Long dialogId,
             @RequestParam @Min(1) Integer questionsCount,
             @AuthenticationPrincipal CustomUserDetails principal
     ) {
-        return quizFlowService.createQuiz(dialogId, questionsCount, principal.getUser())
-                .thenApply(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
+        QuizResponse response = quizService.createQuiz(dialogId, questionsCount, principal.getUser());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
