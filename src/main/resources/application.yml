@@ -1,19 +1,28 @@
 spring:
   application:
     name: ai-tutor-backend
-
+  threads:
+    virtual:
+      enabled: true
   datasource:
     url: jdbc:postgresql://db:5432/ai_tutor_db
     userName: tutor_user
     password: 88888888
+    hikari:
+      maximum-pool-size: 30
+      leak-detection-threshold: 2000
 
   jpa:
+    open-in-view: false
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: true
 
   servlet:
     multipart:
@@ -22,6 +31,17 @@ spring:
 
 server:
   port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
 
 security:
   jwt:
@@ -40,7 +60,7 @@ app:
 
 clients:
   rag:
-    base-url: http://rag:8000
+    base-url: http://rag-mock:8000
     connect-timeout: 2s
     response-timeout: 1200s
     max-in-memory-size: 1MB
@@ -54,3 +74,4 @@ logging:
     org.springframework.security: INFO
     org.springframework.security.web.FilterChainProxy: WARN
     org.springframework.web: INFO
+    com.zaxxer.hikari.pool.HikariPool: DEBUG

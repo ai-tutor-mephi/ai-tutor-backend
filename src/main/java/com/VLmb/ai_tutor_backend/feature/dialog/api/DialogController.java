@@ -34,7 +34,6 @@ public class DialogController {
             @RequestParam("files") MultipartFile[] files) throws IOException {
 
         CreateDialogResponse response = dialogService.createDialogWithFiles(principal.getUser(), files);
-
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -45,7 +44,6 @@ public class DialogController {
             @RequestParam("files") MultipartFile[] files) throws IOException {
 
         List<DialogFileResponse> response = dialogService.addFilesToDialog(dialogId, principal.getUser(), files);
-
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -56,7 +54,6 @@ public class DialogController {
             @RequestBody SendMessageRequest messageRequest) throws IOException {
 
         SendMessageResponse response = dialogService.sendQuestion(messageRequest, principal.getUser(), dialogId);
-
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 

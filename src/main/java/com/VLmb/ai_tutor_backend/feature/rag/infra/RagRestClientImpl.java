@@ -2,11 +2,11 @@ package com.VLmb.ai_tutor_backend.feature.rag.infra;
 
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagFileRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagLoadFilesRequest;
+import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQuizRequest;
+import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQuizResponse;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQueryRequest;
 import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.SendMessageResponse;
-
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 
@@ -15,6 +15,7 @@ public class RagRestClientImpl implements RagRestClient {
 
     private final RestClient client;
     private static final String SEND_MESSAGE_PATH = "/query";
+    private static final String GENERATE_TEST_PATH = "/tests";
     private static final String LOAD_FILES_PATH = "/load";
 
     public RagRestClientImpl(RestClient ragRestClient) {
@@ -23,6 +24,12 @@ public class RagRestClientImpl implements RagRestClient {
 
     @Override
     public SendMessageResponse sendMessage(RagQueryRequest ragRequest) {
+        log.debug(
+                "event=rag_query_request dialog_id={} message_count={} question_len={}",
+                ragRequest.dialogId(),
+                ragRequest.dialogMessages() == null ? 0 : ragRequest.dialogMessages().size(),
+                ragRequest.question() == null ? 0 : ragRequest.question().length()
+        );
 
         return client.post()
                 .uri(SEND_MESSAGE_PATH)
@@ -33,16 +40,42 @@ public class RagRestClientImpl implements RagRestClient {
                 .body(SendMessageResponse.class);
     }
 
+    @Override
+    public RagQuizResponse generateQuiz(Integer questionsCount, RagQuizRequest request) {
+        log.info(
+                "event=rag_generate_quiz_request dialog_id={} message_count={} questions_count={}",
+                request.dialogId(),
+                request.dialogMessages() == null ? 0 : request.dialogMessages().size(),
+                questionsCount
+        );
+
+        return client.post()
+                .uri(GENERATE_TEST_PATH + "/{questionsCount}", questionsCount)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(RagQuizResponse.class);
+    }
+
     // TODO: Add retries and richer error handling for RAG file upload if needed.
     @Override
     public void loadFile(RagLoadFilesRequest request) {
+        int fileCount = request.content() == null ? 0 : request.content().size();
+        int totalTextLen = 0;
         if (request.content() != null) {
             for (RagFileRequest file : request.content()) {
-                log.info("Sending file to RAG: fileId={}, fileName={}, content={}", file.fileId(), file.fileName(), file.text());
+                if (file.text() != null) {
+                    totalTextLen += file.text().length();
+                }
             }
-        } else {
-            log.info("Sending file to RAG with empty content for dialog {}", request.dialogId());
         }
+        log.info(
+                "event=rag_load_files dialog_id={} file_count={} total_text_len={}",
+                request.dialogId(),
+                fileCount,
+                totalTextLen
+        );
 
         client.post()
                 .uri(LOAD_FILES_PATH)
@@ -52,4 +85,5 @@ public class RagRestClientImpl implements RagRestClient {
                 .retrieve()
                 .toBodilessEntity();
     }
+
 }

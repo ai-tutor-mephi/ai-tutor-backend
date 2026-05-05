@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:15
+    command: postgres -c shared_preload_libraries=pg_stat_statements
     container_name: ai-tutor-db
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -46,7 +47,9 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://ai-tutor-db:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-validate}
+      SPRING_LIQUIBASE_ENABLED: ${SPRING_LIQUIBASE_ENABLED:-true}
+      CLIENTS_RAG_BASE_URL: ${CLIENTS_RAG_BASE_URL:-http://host.docker.internal:8000}
 
       APP_MINIO_ENDPOINT: ${APP_MINIO_ENDPOINT:-http://minio:9000}
       APP_MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
@@ -56,30 +59,24 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - ai_tutor_network
 
   tests:
+    profiles: ["tests"]
     build:
       context: .
       target: tester
     container_name: ai-tutor-tests
-    volumes:
-      - ./logs:/app/logs
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
-
-      APP_MINIO_ENDPOINT: ${APP_MINIO_ENDPOINT:-http://minio:9000}
-      APP_MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
-      APP_MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
-    depends_on:
-      db:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
+      TESTCONTAINERS_HOST_OVERRIDE: host.docker.internal
+      DOCKER_HOST: unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - ai_tutor_network
 

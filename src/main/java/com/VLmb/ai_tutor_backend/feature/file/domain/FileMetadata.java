@@ -1,5 +1,6 @@
 package com.VLmb.ai_tutor_backend.feature.file.domain;
 
+import com.VLmb.ai_tutor_backend.feature.dialog.domain.Dialog;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

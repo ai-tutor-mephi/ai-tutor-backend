@@ -1,0 +1,103 @@
+Project ai_tutor_db {
+  database_type: 'PostgreSQL'
+  Note: 'Schema generated from Liquibase SQL migrations: 001-create-schema.sql, 002-create-indexes.sql, 003-create-tests.sql'
+}
+
+Table users {
+  id bigint [pk, increment]
+  user_name varchar(50) [not null, unique]
+  email varchar(255) [not null, unique]
+  hash_password varchar(255) [not null]
+  created_at timestamptz [not null]
+  is_enable boolean [not null]
+}
+
+Table user_roles {
+  user_id bigint [not null]
+  role varchar(20) [not null]
+
+  indexes {
+    (user_id, role) [pk, name: 'pk_user_roles']
+    role [name: 'idx_user_roles_role']
+  }
+}
+
+Table dialogs {
+  id bigint [pk, increment]
+  title varchar(255) [not null]
+  created_at timestamptz [not null]
+  user_id bigint [not null]
+
+  indexes {
+    (user_id, created_at) [name: 'idx_dialogs_user_id_created_at']
+  }
+}
+
+Table messages {
+  id bigint [pk, increment]
+  role varchar(10) [not null]
+  content text [not null]
+  created_at timestamptz [not null]
+  dialog_id bigint [not null]
+
+  indexes {
+    (dialog_id, created_at) [name: 'idx_messages_dialog_id_created_at']
+  }
+}
+
+Table files {
+  id bigint [pk, increment]
+  storage_file_name varchar(255) [not null, unique]
+  original_file_name varchar(255) [not null]
+  file_size bigint [not null]
+  mime_type varchar(100) [not null]
+  upload_date timestamptz [not null]
+  dialog_id bigint [not null]
+
+  indexes {
+    dialog_id [name: 'idx_files_dialog_id']
+  }
+}
+
+Table refresh_tokens {
+  id bigint [pk, increment]
+  user_id bigint
+  token varchar(255) [not null, unique]
+  expiry_date timestamptz [not null]
+
+  indexes {
+    user_id [name: 'idx_refresh_tokens_user_id']
+  }
+}
+
+Table tests {
+  id bigint [pk, increment]
+  test_name varchar(255) [not null]
+  created_at timestamptz [not null, default: `now()`]
+  dialog_id bigint [not null]
+
+  indexes {
+    (dialog_id, created_at) [name: 'idx_tests_dialog_id_created_at']
+  }
+}
+
+Table test_questions {
+  id bigint [pk, increment]
+  question text [not null]
+  variants jsonb [not null, note: 'Must be a non-empty JSON array. SQL checks: jsonb_typeof(variants) = array, jsonb_array_length(variants) > 0']
+  gold_answer text [not null]
+  question_order integer [not null, note: 'Must be > 0']
+  test_id bigint [not null]
+
+  indexes {
+    (test_id, question_order) [unique, name: 'uq_test_questions_test_id_question_order']
+  }
+}
+
+Ref: user_roles.user_id > users.id [delete: cascade]
+Ref: dialogs.user_id > users.id [delete: cascade]
+Ref: messages.dialog_id > dialogs.id [delete: cascade]
+Ref: files.dialog_id > dialogs.id [delete: cascade]
+Ref: refresh_tokens.user_id > users.id
+Ref: tests.dialog_id > dialogs.id [delete: cascade]
+Ref: test_questions.test_id > tests.id [delete: cascade]

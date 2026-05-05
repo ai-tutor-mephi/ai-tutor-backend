@@ -10,6 +10,7 @@ import com.VLmb.ai_tutor_backend.feature.auth.domain.Role;
 import com.VLmb.ai_tutor_backend.feature.auth.domain.User;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.DuplicateResourceException;
 import com.VLmb.ai_tutor_backend.feature.auth.infra.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -25,6 +26,7 @@ import java.util.Set;
 
 @Service
 @Transactional
+@Slf4j
 public class AuthService {
 
     private final AuthenticationManager authenticationManager;
@@ -46,6 +48,7 @@ public class AuthService {
     }
 
     public void register(RegisterRequest request) throws IllegalStateException {
+        log.info("event=auth_register_start user_name={}", request.userName());
 
         if (userRepository.findByUserName(request.userName()).isPresent()) {
             throw new DuplicateResourceException("User", "userName", request.userName());
@@ -62,10 +65,12 @@ public class AuthService {
         newUser.setHashPassword(passwordEncoder.encode(request.password()));
 
         userRepository.save(newUser);
+        log.info("event=auth_register_success user_id={} user_name={}", newUser.getId(), newUser.getUserName());
 
     }
 
     public LoginResponse login(LoginRequest request) {
+        log.info("event=auth_login_start user_name={}", request.userName());
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.userName(),
@@ -76,6 +81,7 @@ public class AuthService {
         UserDetails principal = (UserDetails) auth.getPrincipal();
         String access = jwtService.generateAccessToken(principal);
         RefreshToken refresh = refreshTokenService.createRefreshToken(principal.getUsername());
+        log.info("event=auth_login_success user_name={}", principal.getUsername());
         return new LoginResponse(access, refresh.getToken());
     }
 
@@ -86,6 +92,7 @@ public class AuthService {
                 .map(refreshTokenService::verifyExpiration)
                 .map(RefreshToken::getUser)
                 .map(user -> {
+                    log.info("event=auth_refresh_start user_id={} user_name={}", user.getId(), user.getUserName());
                     var authorities = user.getRoles().stream()
                             .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name())) // если enum
                             .toList();
@@ -96,6 +103,7 @@ public class AuthService {
                     RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getUserName());
                     String newAccessToken = jwtService.generateAccessToken(principal);
 
+                    log.info("event=auth_refresh_success user_id={} user_name={}", user.getId(), user.getUserName());
                     return new RefreshTokenResponse(newAccessToken, newRefreshToken.getToken());
                 })
                 .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
@@ -104,6 +112,7 @@ public class AuthService {
     public void logout(Long id) {
 
     refreshTokenService.deleteByUserId(id);
+    log.info("event=auth_logout user_id={}", id);
 
     }
 

@@ -33,3 +33,8 @@ build/
 .vscode/
 
 .env
+
+deprecated-pom.txt
+
+reports/
+VIRTUAL_THREADS_REFACTOR_PLAN.md

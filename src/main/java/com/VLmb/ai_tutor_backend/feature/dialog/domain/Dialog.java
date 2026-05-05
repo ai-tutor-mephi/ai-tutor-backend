@@ -1,5 +1,8 @@
 package com.VLmb.ai_tutor_backend.feature.dialog.domain;
 
+import com.VLmb.ai_tutor_backend.feature.auth.domain.User;
+import com.VLmb.ai_tutor_backend.feature.file.domain.FileMetadata;
+import com.VLmb.ai_tutor_backend.feature.quiz.domain.Quiz;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,6 +35,9 @@ public class Dialog {
 
     @OneToMany(mappedBy = "dialog", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Message> messages = new ArrayList<>();
+
+    @OneToMany(mappedBy = "dialog", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Quiz> quizzes = new ArrayList<>();
 
     @PrePersist
     public void onPrePersist() {

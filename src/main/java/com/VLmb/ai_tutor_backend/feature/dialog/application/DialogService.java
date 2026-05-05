@@ -21,7 +21,10 @@ import com.VLmb.ai_tutor_backend.feature.file.fileparsing.ExtensionsEnum;
 import com.VLmb.ai_tutor_backend.feature.file.fileparsing.FileParserFactory;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagFileRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.application.RagCommunicationService;
+import com.VLmb.ai_tutor_backend.shared.error.exceptions.TextExtractionException;
+import com.VLmb.ai_tutor_backend.shared.error.exceptions.UnsupportedFileExtension;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,12 +33,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class DialogService {
 
@@ -51,83 +54,111 @@ public class DialogService {
     private final MessageRepository messageRepository;
     private final RagCommunicationService ragCommunicationService;
 
-    @Transactional
     public CreateDialogResponse createDialogWithFiles(User user, MultipartFile[] files) throws IOException {
         if (files == null || files.length == 0) {
             throw new IllegalArgumentException("At least one file must be provided.");
         }
+
+        log.info(
+                "event=dialog_create_with_files_start user_id={} file_count={}",
+                user.getId(),
+                files.length
+        );
 
         Dialog dialog = new Dialog();
         dialog.setOwner(user);
         dialog.setTitle(files[0].getOriginalFilename());
         Dialog savedDialog = dialogRepository.save(dialog);
 
-        for (MultipartFile file : files) {
-            try {
+        try {
+            for (MultipartFile file : files) {
                 addFileToDialog(savedDialog, file);
-            } catch (IOException e) {
-                throw new FileUploadException("Failed to upload file: " + file.getOriginalFilename(), e);
             }
+            log.info(
+                    "event=dialog_create_with_files_success dialog_id={} user_id={} file_count={}",
+                    savedDialog.getId(),
+                    user.getId(),
+                    files.length
+            );
+        } catch (RuntimeException | IOException ex) {
+            log.warn(
+                    "event=dialog_create_with_files_failed dialog_id={} user_id={} message={}",
+                    savedDialog.getId(),
+                    user.getId(),
+                    ex.getMessage(),
+                    ex
+            );
+            cleanupDialogArtifacts(savedDialog);
+            throw ex instanceof RuntimeException runtimeException
+                    ? runtimeException
+                    : new FileUploadException("Failed to upload files for dialog creation", ex);
         }
 
         return new CreateDialogResponse(savedDialog.getId(), savedDialog.getTitle());
     }
 
-    @Transactional
     public List<DialogFileResponse> addFilesToDialog(Long dialogId, User currentUser, MultipartFile[] files) throws IOException {
         if (files == null || files.length == 0) {
             throw new IllegalArgumentException("At least one file must be provided.");
         }
 
+        log.info(
+                "event=dialog_add_files_start dialog_id={} user_id={} file_count={}",
+                dialogId,
+                currentUser.getId(),
+                files.length
+        );
+
         Dialog dialog = getDialog(dialogId);
         assertDialogOwner(dialog, currentUser);
 
         List<DialogFileResponse> storedFiles = new ArrayList<>();
-        for (MultipartFile file : files) {
-            try {
+        List<FileMetadata> uploadedFiles = new ArrayList<>();
+        try {
+            for (MultipartFile file : files) {
                 FileMetadata savedFile = addFileToDialog(dialog, file);
+                uploadedFiles.add(savedFile);
                 storedFiles.add(toFileResponse(savedFile, dialog.getId()));
-            } catch (IOException e) {
-                throw new FileUploadException("Failed to upload file: " + file.getOriginalFilename(), e);
             }
+            log.info(
+                    "event=dialog_add_files_success dialog_id={} user_id={} file_count={}",
+                    dialogId,
+                    currentUser.getId(),
+                    files.length
+            );
+        } catch (RuntimeException | IOException ex) {
+            log.warn(
+                    "event=dialog_add_files_failed dialog_id={} user_id={} message={}",
+                    dialogId,
+                    currentUser.getId(),
+                    ex.getMessage(),
+                    ex
+            );
+            cleanupFiles(uploadedFiles);
+            throw ex instanceof RuntimeException runtimeException
+                    ? runtimeException
+                    : new FileUploadException("Failed to upload files to dialog", ex);
         }
 
         return storedFiles;
     }
 
     private FileMetadata addFileToDialog(Dialog dialog, MultipartFile file) throws IOException {
-        String extension = validateExtension(file.getOriginalFilename());
-        String storageFileName = UUID.randomUUID() + "." + extension;
+        ExtensionsEnum parsedExtension = resolveSupportedExtension(file.getOriginalFilename());
+        String extractedText = extractTextOrThrow(file, parsedExtension);
+        String storageFileName = UUID.randomUUID() + "." + parsedExtension.value();
 
+        uploadToStorage(storageFileName, file);
+
+        FileMetadata saved = saveFileMetadata(dialog, file, storageFileName);
+        RagFileRequest ragFile = toRagFileRequest(saved, extractedText);
         try {
-            fileStorageService.uploadFile(storageFileName, file.getInputStream(), file.getSize());
-        } catch (IOException e) {
-            throw new FileUploadException("Could not store file " + file.getOriginalFilename(), e);
+            ragCommunicationService.loadFileToRag(dialog.getId(), List.of(ragFile));
+            return saved;
+        } catch (RuntimeException ex) {
+            cleanupPersistedFile(saved.getId(), storageFileName);
+            throw ex;
         }
-
-        FileMetadata fileMetadata = new FileMetadata();
-        fileMetadata.setDialog(dialog);
-        fileMetadata.setOriginalFileName(file.getOriginalFilename());
-        fileMetadata.setStorageFileName(storageFileName);
-        fileMetadata.setFileSize(file.getSize());
-        fileMetadata.setMimeType(file.getContentType());
-
-        FileMetadata saved = fileMetadataRepository.save(fileMetadata);
-        Optional<ExtensionsEnum> parsedExtension = ExtensionsEnum.fromValue(extension);
-        if (parsedExtension.filter(TEXT_BASED_EXTENSIONS::contains).isPresent()) {
-            sendFileToRag(dialog.getId(), saved, file, parsedExtension.get());
-        }
-
-        return saved;
-    }
-
-    private void sendFileToRag(Long dialogId, FileMetadata metadata, MultipartFile file, ExtensionsEnum extension) throws IOException {
-        String text = FileParserFactory.getParser(extension).parse(file);
-        if (text == null || text.isBlank()) {
-            return;
-        }
-        RagFileRequest fileInf = new RagFileRequest(metadata.getId().toString(), metadata.getOriginalFileName(), text);
-        ragCommunicationService.loadFileToRag(dialogId, List.of(fileInf));
     }
 
     private String validateExtension(String filename) {
@@ -143,6 +174,89 @@ public class DialogService {
             return "";
         }
         return filename.substring(filename.lastIndexOf(".") + 1).toLowerCase(Locale.ROOT);
+    }
+
+    private ExtensionsEnum resolveSupportedExtension(String filename) {
+        String extension = validateExtension(filename);
+        return ExtensionsEnum.fromValue(extension)
+                .filter(TEXT_BASED_EXTENSIONS::contains)
+                .orElseThrow(() -> new UnsupportedFileExtension(
+                        String.format("File extension '%s' is not supported", extension)
+                ));
+    }
+
+    private String extractTextOrThrow(MultipartFile file, ExtensionsEnum extension) throws IOException {
+        String text = FileParserFactory.getParser(extension).parse(file);
+        if (text == null || text.isBlank()) {
+            throw new TextExtractionException(
+                    String.format("Unable to extract text from file '%s'", file.getOriginalFilename())
+            );
+        }
+        return text;
+    }
+
+    private void uploadToStorage(String storageFileName, MultipartFile file) {
+        try {
+            fileStorageService.uploadFile(storageFileName, file.getInputStream(), file.getSize());
+        } catch (IOException e) {
+            throw new FileUploadException("Could not store file " + file.getOriginalFilename(), e);
+        }
+    }
+
+    private FileMetadata saveFileMetadata(Dialog dialog, MultipartFile file, String storageFileName) {
+        FileMetadata fileMetadata = new FileMetadata();
+        fileMetadata.setDialog(dialog);
+        fileMetadata.setOriginalFileName(file.getOriginalFilename());
+        fileMetadata.setStorageFileName(storageFileName);
+        fileMetadata.setFileSize(file.getSize());
+        fileMetadata.setMimeType(file.getContentType());
+
+        try {
+            return fileMetadataRepository.save(fileMetadata);
+        } catch (RuntimeException ex) {
+            cleanupStorageFile(storageFileName);
+            throw ex;
+        }
+    }
+
+    private RagFileRequest toRagFileRequest(FileMetadata metadata, String extractedText) {
+        return new RagFileRequest(
+                metadata.getId().toString(),
+                metadata.getOriginalFileName(),
+                extractedText
+        );
+    }
+
+    private void cleanupPersistedFile(Long fileId, String storageFileName) {
+        try {
+            fileMetadataRepository.deleteById(fileId);
+        } catch (RuntimeException ignored) {
+        }
+        cleanupStorageFile(storageFileName);
+    }
+
+    private void cleanupFiles(List<FileMetadata> files) {
+        for (FileMetadata file : files) {
+            cleanupPersistedFile(file.getId(), file.getStorageFileName());
+        }
+    }
+
+    private void cleanupStorageFile(String storageFileName) {
+        try {
+            fileStorageService.deleteFile(storageFileName);
+        } catch (RuntimeException ignored) {
+        }
+    }
+
+    private void cleanupDialogArtifacts(Dialog dialog) {
+        try {
+            List<FileMetadata> files = fileMetadataRepository.findByDialogId(dialog.getId());
+            for (FileMetadata file : files) {
+                cleanupStorageFile(file.getStorageFileName());
+            }
+            dialogRepository.deleteById(dialog.getId());
+        } catch (RuntimeException ignored) {
+        }
     }
 
     @Transactional(readOnly = true)
@@ -186,12 +300,19 @@ public class DialogService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
     public SendMessageResponse sendQuestion(SendMessageRequest messageRequest, User currentUser, Long dialogId) throws IOException {
+        Dialog dialog = getDialog(dialogId);
+        assertDialogOwner(dialog, currentUser);
+
+        log.info(
+                "event=dialog_send_question_start dialog_id={} user_id={}",
+                dialogId,
+                currentUser.getId()
+        );
 
         Message question = new Message();
         question.setRole(Message.MessageRole.USER);
-        question.setDialog(getDialog(dialogId));
+        question.setDialog(dialog);
         question.setContent(messageRequest.question());
 
         SendMessageResponse messageResponse = ragCommunicationService.sendQuestionToRag(dialogId, question);
@@ -201,10 +322,18 @@ public class DialogService {
         if (messageResponse.answer() != null) {
             Message answer = new Message();
             answer.setRole(Message.MessageRole.BOT);
-            answer.setDialog(getDialog(dialogId));
+            answer.setDialog(dialog);
             answer.setContent(messageResponse.answer());
             messageRepository.save(answer);
         }
+
+        log.info(
+                "event=dialog_send_question_success dialog_id={} user_id={} has_answer={} answer_len={}",
+                dialogId,
+                currentUser.getId(),
+                messageResponse.answer() != null,
+                messageResponse.answer() == null ? 0 : messageResponse.answer().length()
+        );
 
         return messageResponse;
     }
@@ -214,17 +343,31 @@ public class DialogService {
         Dialog dialog = getDialog(dialogId);
         assertDialogOwner(dialog, currentUser);
 
-        for (FileMetadata file : dialog.getFiles()) {
+        List<FileMetadata> files = fileMetadataRepository.findByDialogId(dialogId);
+        log.info(
+                "event=dialog_delete dialog_id={} user_id={} file_count={}",
+                dialogId,
+                currentUser.getId(),
+                files.size()
+        );
+
+        for (FileMetadata file : files) {
             fileStorageService.deleteFile(file.getStorageFileName());
         }
 
-        dialogRepository.delete(dialog);
+        dialogRepository.deleteById(dialogId);
     }
 
     @Transactional
     public DialogSummaryResponse changeDialogTitle(Long dialogId, User currentUser, String newTitle) {
         Dialog dialog = getDialog(dialogId);
         assertDialogOwner(dialog, currentUser);
+        log.info(
+                "event=dialog_title_change dialog_id={} user_id={} new_title_len={}",
+                dialogId,
+                currentUser.getId(),
+                newTitle == null ? 0 : newTitle.length()
+        );
         dialog.setTitle(newTitle);
         Dialog saved = dialogRepository.save(dialog);
         return new DialogSummaryResponse(saved.getId(), saved.getTitle(), saved.getCreatedAt());
