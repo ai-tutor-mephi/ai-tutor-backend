@@ -1074,9 +1074,10 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "minimum": 1
+              "minimum": 1,
+              "maximum": 20
             },
-            "description": "Number of questions to generate in the quiz. The same value is forwarded to RAG as a path variable."
+            "description": "Количество вопросов в квизе."
           }
         ],
         "responses": {
@@ -1086,6 +1087,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/QuizResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректное количество вопросов в квизе",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }

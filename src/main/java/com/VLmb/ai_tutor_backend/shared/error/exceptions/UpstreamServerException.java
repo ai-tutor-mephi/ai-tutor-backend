@@ -7,7 +7,7 @@ public class UpstreamServerException extends RuntimeException {
     private final HttpStatusCode status;
 
     public UpstreamServerException(HttpStatusCode status, String body) {
-        super("Upstream 5xx " + status + " body=" + body);
+        super("RAG-сервис вернул серверную ошибку " + status + ", body=" + body);
         this.status = status;
     }
 

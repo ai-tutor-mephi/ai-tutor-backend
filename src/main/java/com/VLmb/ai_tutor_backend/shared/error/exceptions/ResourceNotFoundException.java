@@ -12,6 +12,23 @@ public class ResourceNotFoundException extends RuntimeException {
     }
 
     public ResourceNotFoundException(String resourceName, String fieldName, Object fieldValue) {
-        super(String.format("%s not found with %s: '%s'", resourceName, fieldName, fieldValue));
+        super(String.format("%s с %s '%s' не найден.", translateResourceName(resourceName), translateFieldName(fieldName), fieldValue));
+    }
+
+    private static String translateResourceName(String resourceName) {
+        return switch (resourceName) {
+            case "Dialog" -> "Диалог";
+            case "Quiz" -> "Квиз";
+            case "User" -> "Пользователь";
+            default -> resourceName;
+        };
+    }
+
+    private static String translateFieldName(String fieldName) {
+        return switch (fieldName) {
+            case "id" -> "id";
+            case "userName" -> "именем";
+            default -> fieldName;
+        };
     }
 }

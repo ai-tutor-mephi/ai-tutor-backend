@@ -60,7 +60,7 @@ public class DialogService {
 
     public CreateDialogResponse createDialogWithFiles(User user, MultipartFile[] files, String requestedTitle) throws IOException {
         if (files == null || files.length == 0) {
-            throw new IllegalArgumentException("At least one file must be provided.");
+            throw new IllegalArgumentException("Необходимо загрузить хотя бы один файл.");
         }
 
         log.info(
@@ -95,7 +95,7 @@ public class DialogService {
             cleanupDialogArtifacts(savedDialog);
             throw ex instanceof RuntimeException runtimeException
                     ? runtimeException
-                    : new FileUploadException("Failed to upload files for dialog creation", ex);
+                    : new FileUploadException("Не удалось загрузить файлы при создании диалога.", ex);
         }
 
         return new CreateDialogResponse(savedDialog.getId(), savedDialog.getTitle());
@@ -110,7 +110,7 @@ public class DialogService {
 
     public List<DialogFileResponse> addFilesToDialog(Long dialogId, User currentUser, MultipartFile[] files) throws IOException {
         if (files == null || files.length == 0) {
-            throw new IllegalArgumentException("At least one file must be provided.");
+            throw new IllegalArgumentException("Необходимо загрузить хотя бы один файл.");
         }
 
         log.info(
@@ -148,7 +148,7 @@ public class DialogService {
             cleanupFiles(uploadedFiles);
             throw ex instanceof RuntimeException runtimeException
                     ? runtimeException
-                    : new FileUploadException("Failed to upload files to dialog", ex);
+                    : new FileUploadException("Не удалось загрузить файлы в диалог.", ex);
         }
 
         return storedFiles;
@@ -175,7 +175,7 @@ public class DialogService {
     private String validateExtension(String filename) {
         String extension = getFileExtension(filename);
         if (extension.isBlank()) {
-            throw new FileUploadException("File must have an extension");
+            throw new FileUploadException("Файл должен иметь расширение.");
         }
         return extension;
     }
@@ -192,7 +192,7 @@ public class DialogService {
         return ExtensionsEnum.fromValue(extension)
                 .filter(TEXT_BASED_EXTENSIONS::contains)
                 .orElseThrow(() -> new UnsupportedFileExtension(
-                        String.format("File extension '%s' is not supported", extension)
+                        String.format("Расширение файла '%s' не поддерживается.", extension)
                 ));
     }
 
@@ -200,7 +200,7 @@ public class DialogService {
         String text = FileParserFactory.getParser(extension).parse(file);
         if (text == null || text.isBlank()) {
             throw new TextExtractionException(
-                    String.format("Unable to extract text from file '%s'", file.getOriginalFilename())
+                    String.format("Не удалось извлечь текст из файла '%s'.", file.getOriginalFilename())
             );
         }
         return text;
@@ -210,7 +210,7 @@ public class DialogService {
         try {
             fileStorageService.uploadFile(storageFileName, file.getInputStream(), file.getSize());
         } catch (IOException e) {
-            throw new FileUploadException("Could not store file " + file.getOriginalFilename(), e);
+            throw new FileUploadException("Не удалось сохранить файл " + file.getOriginalFilename(), e);
         }
     }
 
@@ -291,7 +291,7 @@ public class DialogService {
                 .orElseThrow(() -> new ResourceNotFoundException("Dialog", "id", dialogId));
 
         if (!dialog.getOwner().getId().equals(currentUser.getId())) {
-            throw new SecurityException("User does not have permission to access this dialog");
+            throw new SecurityException("У пользователя нет доступа к этому диалогу.");
         }
 
         List<DialogMessageResponse> messages = messageRepository.findByDialogIdOrderByCreatedAt(dialogId)
@@ -391,7 +391,7 @@ public class DialogService {
 
     private void assertDialogOwner(Dialog dialog, User currentUser) {
         if (!dialog.getOwner().getId().equals(currentUser.getId())) {
-            throw new SecurityException("User does not have permission to access this dialog");
+            throw new SecurityException("У пользователя нет доступа к этому диалогу.");
         }
     }
 

@@ -5,14 +5,14 @@ import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizResponse;
 import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizScoreRequest;
 import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizScoreResponse;
 import com.VLmb.ai_tutor_backend.feature.quiz.application.QuizService;
+import com.VLmb.ai_tutor_backend.shared.error.exceptions.InvalidQuizQuestionsCountException;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,18 +25,28 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/quiz")
-@Validated
 @RequiredArgsConstructor
 public class QuizController {
+
+    private static final int MIN_QUESTIONS_COUNT = 1;
+    private static final int MAX_QUESTIONS_COUNT = 20;
 
     private final QuizService quizService;
 
     @PostMapping
     public ResponseEntity<QuizResponse> createQuiz(
             @RequestParam Long dialogId,
-            @RequestParam @Min(1) @Max(20) Integer questionsCount,
+            @Parameter(
+                    description = "Количество вопросов в квизе.",
+                    schema = @Schema(minimum = "1", maximum = "20")
+            )
+            @RequestParam Integer questionsCount,
             @AuthenticationPrincipal CustomUserDetails principal
     ) {
+        if (questionsCount < MIN_QUESTIONS_COUNT || questionsCount > MAX_QUESTIONS_COUNT) {
+            throw new InvalidQuizQuestionsCountException(MIN_QUESTIONS_COUNT, MAX_QUESTIONS_COUNT);
+        }
+
         QuizResponse response = quizService.createQuiz(dialogId, questionsCount, principal.getUser());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

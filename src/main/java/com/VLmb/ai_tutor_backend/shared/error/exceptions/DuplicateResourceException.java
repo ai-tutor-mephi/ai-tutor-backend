@@ -11,6 +11,21 @@ public class DuplicateResourceException extends RuntimeException {
     }
 
     public DuplicateResourceException(String resourceName, String fieldName, Object fieldValue) {
-        super(String.format("%s with %s '%s' already exists.", resourceName, fieldName, fieldValue));
+        super(String.format("%s с %s '%s' уже существует.", translateResourceName(resourceName), translateFieldName(fieldName), fieldValue));
+    }
+
+    private static String translateResourceName(String resourceName) {
+        return switch (resourceName) {
+            case "User" -> "Пользователь";
+            default -> resourceName;
+        };
+    }
+
+    private static String translateFieldName(String fieldName) {
+        return switch (fieldName) {
+            case "userName" -> "именем";
+            case "email" -> "email";
+            default -> fieldName;
+        };
     }
 }

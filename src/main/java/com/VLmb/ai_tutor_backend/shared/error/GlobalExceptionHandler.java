@@ -1,8 +1,8 @@
 package com.VLmb.ai_tutor_backend.shared.error;
 
-import com.VLmb.ai_tutor_backend.shared.error.ErrorResponse;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.DuplicateResourceException;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.FileUploadException;
+import com.VLmb.ai_tutor_backend.shared.error.exceptions.InvalidQuizQuestionsCountException;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.ResourceNotFoundException;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.TextExtractionException;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.TokenRefreshException;
@@ -11,10 +11,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.OffsetDateTime;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
@@ -64,6 +66,50 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUnsupportedFileExtension(UnsupportedFileExtension ex, HttpServletRequest request) {
         logException(HttpStatus.UNPROCESSABLE_ENTITY, ex, request);
         return createErrorResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(InvalidQuizQuestionsCountException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidQuizQuestionsCountException(
+            InvalidQuizQuestionsCountException ex,
+            HttpServletRequest request
+    ) {
+        logException(HttpStatus.BAD_REQUEST, ex, request);
+        return createErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request
+    ) {
+        String message = ex.getBindingResult().getAllErrors().stream()
+                .map(error -> error.getDefaultMessage() == null
+                        ? "Запрос содержит некорректные данные."
+                        : error.getDefaultMessage())
+                .distinct()
+                .collect(Collectors.joining("; "));
+
+        if (message.isBlank()) {
+            message = "Запрос содержит некорректные данные.";
+        }
+
+        logException(HttpStatus.BAD_REQUEST, ex, request);
+        return createErrorResponse(HttpStatus.BAD_REQUEST, message, request.getRequestURI());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
+            IllegalArgumentException ex,
+            HttpServletRequest request
+    ) {
+        logException(HttpStatus.BAD_REQUEST, ex, request);
+        return createErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<ErrorResponse> handleSecurityException(SecurityException ex, HttpServletRequest request) {
+        logException(HttpStatus.FORBIDDEN, ex, request);
+        return createErrorResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI());
     }
 
     private void logException(HttpStatus status, Exception ex, HttpServletRequest request) {

@@ -11,7 +11,7 @@ public class TokenRefreshException extends RuntimeException {
     }
 
     public TokenRefreshException(String token, String message) {
-        super(String.format("Failed for token [%s]: %s", token, message));
+        super(String.format("Ошибка токена обновления [%s]: %s", token, message));
     }
 
 }

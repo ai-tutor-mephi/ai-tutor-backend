@@ -174,7 +174,7 @@ public class QuizService {
 
     private void assertDialogOwner(Dialog dialog, User currentUser) {
         if (!dialog.getOwner().getId().equals(currentUser.getId())) {
-            throw new SecurityException("User does not have permission to access this dialog");
+            throw new SecurityException("У пользователя нет доступа к этому диалогу.");
         }
     }
 }

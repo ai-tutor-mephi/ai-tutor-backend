@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record QuizScoreRequest(
-        @NotNull
+        @NotNull(message = "Ответы на вопросы квиза должны быть переданы.")
         List<@Valid QuizAnswerRequest> answers
 ) {
 }

@@ -106,7 +106,7 @@ public class AuthService {
                     log.info("event=auth_refresh_success user_id={} user_name={}", user.getId(), user.getUserName());
                     return new RefreshTokenResponse(newAccessToken, newRefreshToken.getToken());
                 })
-                .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
+                .orElseThrow(() -> new RuntimeException("Токен обновления не найден в базе данных."));
     }
 
     public void logout(Long id) {

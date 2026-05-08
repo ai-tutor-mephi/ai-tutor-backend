@@ -47,7 +47,7 @@ public class FileStorageService {
                         .build();
                 s3Client.createBucket(createBucketRequest);
             } catch (S3Exception ex) {
-                throw new RuntimeException("Could not create bucket: " + bucketName, ex);
+                throw new RuntimeException("Не удалось создать бакет: " + bucketName, ex);
             }
         }
     }
