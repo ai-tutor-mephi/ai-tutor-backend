@@ -2,6 +2,7 @@ package com.VLmb.ai_tutor_backend.feature.dialog.api;
 
 import com.VLmb.ai_tutor_backend.feature.auth.application.CustomUserDetails;
 import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.ChangeDialogTitleRequest;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.CreateDialogRequest;
 import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.DialogSummaryResponse;
 import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.GetDialogMessagesResponse;
 import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.CreateDialogResponse;
@@ -31,9 +32,11 @@ public class DialogController {
     @PostMapping(path = "/with-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CreateDialogResponse> createDialogWithFiles(
             @AuthenticationPrincipal CustomUserDetails principal,
-            @RequestParam("files") MultipartFile[] files) throws IOException {
+            @RequestPart(name = "request", required = false) @Valid CreateDialogRequest request,
+            @RequestPart("files") MultipartFile[] files) throws IOException {
 
-        CreateDialogResponse response = dialogService.createDialogWithFiles(principal.getUser(), files);
+        String title = request == null ? null : request.title();
+        CreateDialogResponse response = dialogService.createDialogWithFiles(principal.getUser(), files, title);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

@@ -5,6 +5,7 @@ import com.VLmb.ai_tutor_backend.feature.auth.api.dto.LoginResponse;
 import com.VLmb.ai_tutor_backend.feature.auth.api.dto.RegisterRequest;
 import com.VLmb.ai_tutor_backend.feature.auth.infra.RefreshTokenRepository;
 import com.VLmb.ai_tutor_backend.feature.auth.infra.UserRepository;
+import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.CreateDialogRequest;
 import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.CreateDialogResponse;
 import com.VLmb.ai_tutor_backend.feature.dialog.infra.DialogRepository;
 import com.VLmb.ai_tutor_backend.feature.dialog.infra.MessageRepository;
@@ -115,6 +116,9 @@ class DialogFlowIntegrationTest {
         );
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        HttpHeaders jsonHeaders = new HttpHeaders();
+        jsonHeaders.setContentType(MediaType.APPLICATION_JSON);
+        body.add("request", new HttpEntity<>(new CreateDialogRequest("Custom dialog title"), jsonHeaders));
         body.add("files", new ClassPathResource("test-horse.txt"));
 
         HttpHeaders headers = new HttpHeaders();
@@ -131,7 +135,9 @@ class DialogFlowIntegrationTest {
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
         assertNotNull(response.getBody().dialogId());
+        assertEquals("Custom dialog title", response.getBody().title());
         assertEquals(1, dialogRepository.count());
+        assertEquals("Custom dialog title", dialogRepository.findById(response.getBody().dialogId()).orElseThrow().getTitle());
         assertEquals(1, fileMetadataRepository.count());
         verify(fileStorageService).uploadFile(anyString(), any(), anyLong());
     }

@@ -55,6 +55,10 @@ public class DialogService {
     private final RagCommunicationService ragCommunicationService;
 
     public CreateDialogResponse createDialogWithFiles(User user, MultipartFile[] files) throws IOException {
+        return createDialogWithFiles(user, files, null);
+    }
+
+    public CreateDialogResponse createDialogWithFiles(User user, MultipartFile[] files, String requestedTitle) throws IOException {
         if (files == null || files.length == 0) {
             throw new IllegalArgumentException("At least one file must be provided.");
         }
@@ -67,7 +71,7 @@ public class DialogService {
 
         Dialog dialog = new Dialog();
         dialog.setOwner(user);
-        dialog.setTitle(files[0].getOriginalFilename());
+        dialog.setTitle(resolveDialogTitle(files, requestedTitle));
         Dialog savedDialog = dialogRepository.save(dialog);
 
         try {
@@ -95,6 +99,13 @@ public class DialogService {
         }
 
         return new CreateDialogResponse(savedDialog.getId(), savedDialog.getTitle());
+    }
+
+    private String resolveDialogTitle(MultipartFile[] files, String requestedTitle) {
+        if (requestedTitle != null && !requestedTitle.isBlank()) {
+            return requestedTitle.trim();
+        }
+        return files[0].getOriginalFilename();
     }
 
     public List<DialogFileResponse> addFilesToDialog(Long dialogId, User currentUser, MultipartFile[] files) throws IOException {

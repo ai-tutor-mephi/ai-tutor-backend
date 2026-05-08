@@ -105,6 +105,16 @@
           "title"
         ]
       },
+      "CreateDialogRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Optional dialog title. If omitted or blank, the first uploaded file name is used."
+          }
+        }
+      },
       "DialogInfo": {
         "type": "object",
         "properties": {
@@ -672,11 +682,19 @@
                       "type": "string",
                       "format": "binary"
                     }
+                  },
+                  "request": {
+                    "$ref": "#/components/schemas/CreateDialogRequest"
                   }
                 },
                 "required": [
                   "files"
                 ]
+              },
+              "encoding": {
+                "request": {
+                  "contentType": "application/json"
+                }
               }
             }
           }
