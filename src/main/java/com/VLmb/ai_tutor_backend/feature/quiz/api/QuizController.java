@@ -6,6 +6,7 @@ import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizScoreRequest;
 import com.VLmb.ai_tutor_backend.feature.quiz.api.dto.QuizScoreResponse;
 import com.VLmb.ai_tutor_backend.feature.quiz.application.QuizService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -33,7 +34,7 @@ public class QuizController {
     @PostMapping
     public ResponseEntity<QuizResponse> createQuiz(
             @RequestParam Long dialogId,
-            @RequestParam @Min(1) Integer questionsCount,
+            @RequestParam @Min(1) @Max(20) Integer questionsCount,
             @AuthenticationPrincipal CustomUserDetails principal
     ) {
         QuizResponse response = quizService.createQuiz(dialogId, questionsCount, principal.getUser());
