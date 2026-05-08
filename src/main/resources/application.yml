@@ -71,7 +71,7 @@ clients:
 
 logging:
   level:
+    root: INFO
     org.springframework.security: INFO
     org.springframework.security.web.FilterChainProxy: WARN
     org.springframework.web: INFO
-    com.zaxxer.hikari.pool.HikariPool: DEBUG
