@@ -17,6 +17,7 @@ import com.VLmb.ai_tutor_backend.shared.error.exceptions.ResourceNotFoundExcepti
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -27,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -81,8 +83,15 @@ class QuizServiceTest {
         assertEquals("Quiz 1", saved.testName());
         assertEquals(1, saved.questions().size());
         assertEquals("Q1", saved.questions().get(0).question());
+        assertThat(saved.questions().get(0).variants()).containsExactlyInAnyOrder("A", "B");
+
+        ArgumentCaptor<Quiz> quizCaptor = ArgumentCaptor.forClass(Quiz.class);
         verify(ragCommunicationService).generateQuiz(10L, 3);
-        verify(quizRepository).save(any(Quiz.class));
+        verify(quizRepository).save(quizCaptor.capture());
+
+        List<String> savedVariants = quizCaptor.getValue().getQuestions().getFirst().getVariants();
+        assertThat(savedVariants).containsExactlyInAnyOrder("A", "B");
+        assertThat(saved.questions().getFirst().variants()).containsExactlyElementsOf(savedVariants);
     }
 
     @Test

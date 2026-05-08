@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -131,7 +132,7 @@ public class QuizService {
                 RagQuizQuestionResponse questionResponse = questionResponses.get(i);
                 QuizQuestion question = new QuizQuestion();
                 question.setQuestion(questionResponse.question());
-                question.setVariants(new ArrayList<>(questionResponse.variants()));
+                question.setVariants(shuffledVariants(questionResponse.variants()));
                 question.setGoldAnswer(questionResponse.goldAnswer());
                 question.setQuestionOrder(i + 1);
                 question.setQuiz(quiz);
@@ -140,6 +141,12 @@ public class QuizService {
         }
         quiz.setQuestions(questions);
         return quiz;
+    }
+
+    private List<String> shuffledVariants(List<String> variants) {
+        List<String> shuffled = new ArrayList<>(variants);
+        Collections.shuffle(shuffled);
+        return shuffled;
     }
 
     private QuizResponse toDto(Quiz quiz) {
