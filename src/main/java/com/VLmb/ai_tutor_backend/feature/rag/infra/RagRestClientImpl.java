@@ -1,5 +1,7 @@
 package com.VLmb.ai_tutor_backend.feature.rag.infra;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagFileRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagLoadFilesRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQuizRequest;
@@ -14,12 +16,14 @@ import org.springframework.web.client.RestClient;
 public class RagRestClientImpl implements RagRestClient {
 
     private final RestClient client;
+    private final ObjectMapper objectMapper;
     private static final String SEND_MESSAGE_PATH = "/query";
     private static final String GENERATE_TEST_PATH = "/tests";
     private static final String LOAD_FILES_PATH = "/load";
 
-    public RagRestClientImpl(RestClient ragRestClient) {
+    public RagRestClientImpl(RestClient ragRestClient, ObjectMapper objectMapper) {
         this.client = ragRestClient;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -76,6 +80,7 @@ public class RagRestClientImpl implements RagRestClient {
                 fileCount,
                 totalTextLen
         );
+        log.info("event=rag_load_files_request_body body={}", toJson(request));
 
         client.post()
                 .uri(LOAD_FILES_PATH)
@@ -86,4 +91,12 @@ public class RagRestClientImpl implements RagRestClient {
                 .toBodilessEntity();
     }
 
+    private String toJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException ex) {
+            log.warn("event=rag_request_body_serialization_failed message={}", ex.getMessage());
+            return "<unserializable>";
+        }
+    }
 }

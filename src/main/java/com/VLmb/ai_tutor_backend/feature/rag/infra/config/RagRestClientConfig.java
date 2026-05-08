@@ -4,6 +4,7 @@ import com.VLmb.ai_tutor_backend.feature.rag.infra.RagRestClient;
 import com.VLmb.ai_tutor_backend.feature.rag.infra.RagRestClientImpl;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.UpstreamClientException;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.UpstreamServerException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -62,8 +63,8 @@ public class RagRestClientConfig {
     }
 
     @Bean
-    RagRestClient ragClientApi(RestClient ragRestClient) {
-        return new RagRestClientImpl(ragRestClient);
+    RagRestClient ragClientApi(RestClient ragRestClient, ObjectMapper objectMapper) {
+        return new RagRestClientImpl(ragRestClient, objectMapper);
     }
 
     private static String safeBody(org.springframework.http.client.ClientHttpResponse response) {

@@ -6,6 +6,7 @@ import com.VLmb.ai_tutor_backend.feature.dialog.domain.Message;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagFileRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagLoadFilesRequest;
 import com.VLmb.ai_tutor_backend.feature.rag.api.dto.RagQueryRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,7 +43,7 @@ class RagRestClientTest {
 
     @BeforeEach
     void setUp() {
-        ragRestClient = new RagRestClientImpl(restClient);
+        ragRestClient = new RagRestClientImpl(restClient, new ObjectMapper());
 
         ragQueryRequest = new RagQueryRequest(
                 "42",
