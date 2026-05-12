@@ -7,7 +7,7 @@
 
 <div align="center">
   <a href="./docs/AI_Tutor.pdf">
-    <img src="./docs/ai-tutor-preview.png" alt="AI Tutor Presentation" width="800">
+    <img src="./docs/ai-tutor-preview.png" alt="AI Tutor Presentation" width="2012">
   </a>
 </div>
 

@@ -7,6 +7,7 @@ import com.VLmb.ai_tutor_backend.shared.error.exceptions.ResourceNotFoundExcepti
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.TextExtractionException;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.TokenRefreshException;
 import com.VLmb.ai_tutor_backend.shared.error.exceptions.UnsupportedFileExtension;
+import com.VLmb.ai_tutor_backend.shared.error.exceptions.UpstreamServerException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final String SUPPORT_CONTACT_MESSAGE = "Наша поддержка в tg: @WocherZ";
 
     private ResponseEntity<ErrorResponse> createErrorResponse(HttpStatus status, String message, String path) {
         ErrorResponse errorResponse = new ErrorResponse(
@@ -54,6 +57,19 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleFileUploadException(FileUploadException ex, HttpServletRequest request) {
         logException(HttpStatus.INTERNAL_SERVER_ERROR, ex, request);
         return createErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(UpstreamServerException.class)
+    public ResponseEntity<ErrorResponse> handleUpstreamServerException(
+            UpstreamServerException ex,
+            HttpServletRequest request
+    ) {
+        logException(HttpStatus.INTERNAL_SERVER_ERROR, ex, request);
+        return createErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                ex.getMessage() + " " + SUPPORT_CONTACT_MESSAGE,
+                request.getRequestURI()
+        );
     }
 
     @ExceptionHandler(TextExtractionException.class)

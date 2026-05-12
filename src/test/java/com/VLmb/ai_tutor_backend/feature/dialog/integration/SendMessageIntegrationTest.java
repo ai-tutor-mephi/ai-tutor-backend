@@ -11,6 +11,7 @@ import com.VLmb.ai_tutor_backend.feature.dialog.api.dto.SendMessageResponse;
 import com.VLmb.ai_tutor_backend.feature.dialog.domain.Dialog;
 import com.VLmb.ai_tutor_backend.feature.dialog.infra.DialogRepository;
 import com.VLmb.ai_tutor_backend.feature.dialog.infra.MessageRepository;
+import com.VLmb.ai_tutor_backend.shared.error.ErrorResponse;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +31,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -122,14 +124,19 @@ public class SendMessageIntegrationTest {
         headers.setBearerAuth(accessToken);
 
         SendMessageRequest request = new SendMessageRequest("Расскажи о себе");
-        ResponseEntity<String> response = restTemplate.exchange(
+        ResponseEntity<ErrorResponse> response = restTemplate.exchange(
                 SEND_QUESTION.formatted(dialogId),
                 HttpMethod.POST,
                 new HttpEntity<>(request, headers),
-                String.class
+                ErrorResponse.class
         );
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getBody().status());
+        assertTrue(response.getBody().message().contains("RAG-сервис вернул серверную ошибку"));
+        assertTrue(response.getBody().message().contains("RAG temporarily unavailable"));
+        assertTrue(response.getBody().message().contains("Наша поддержка в tg: @WocherZ"));
         assertEquals(0, messageRepository.count());
     }
 
